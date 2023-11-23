@@ -9,7 +9,10 @@
     clip: rect(0, 0, 0, 0);
     border: 0;
 }
-
+/* ////////// CONTROLS ////////// */
+.leaflet-control-layers .leaflet-control-layers-toggle{
+    display: none;
+}
 h2, h3{
     text-transform: uppercase;
 }
@@ -230,20 +233,20 @@ fieldset{
 }
 
 #mapFilter{
-    width: 300px;
+    width: 0;
     background-color: #fff;
     border-radius: 16px;
     padding: 1em;
     position:absolute;
     max-height: 650px;
     z-index: 10000;
-    overflow-y: scroll;
+    overflow-y: auto;
     left: -300px;
-    transition: 0.2s ease-in-out left
+    transition: 0.2s ease-in-out all;
+    opacity: 0;
 } 
 #mapFilter.fullscreen-filters{
     max-height: unset;
-    overflow-y: unset;
     bottom: 8vh;
     border-radius: 0 16px 16px 0;
 } 
@@ -258,16 +261,27 @@ fieldset{
     padding: 0.5em 1em 0.5em 0.5em;
     transition: 0.2s ease-in-out left
 }
+#open-close-filter .img-open{
+    display: none;
+}
 #mapFilter.open{
-    left: 0px;
-    transition: 0.2s ease-in-out left
+    left: -10px;
+    transition: 0.2s ease-in-out all;
+    width: 290px;
+    opacity: 1;
 }
 #open-close-filter.open{
-    left: 300px;
-    transition: 0.2s ease-in-out left
+    left: 280px;
+    bottom: 20px;
+    transition: 0.2s ease-in-out left;
 }
-#open-close-filter.open.fullscreen-filters{
-    left: 0px;
+
+#open-close-filter.open .img-open{
+    display: block;
+}
+
+#open-close-filter.open .img-close{
+    display: none;
 }
 #mapMusee.open{
     width: calc(100% - 300px);
@@ -284,12 +298,26 @@ fieldset{
     text-align: center;
     margin: 0;
 }
+
+#mapMusee #mapFilter{
+    overflow: auto;
+}
 /* Reset Button */
-#reset-button{
+/* #reset-button{
     z-index: 999;
     position: absolute;
     bottom: 20px;
     right: 10px;
+} */
+#reset-button{
+    width: 34px;
+    height: 34px;
+    padding: 7px;
+    margin-top: 5px;
+    background-color: #fff;
+}
+#reset-button:hover{
+    background-color: #f4f4f4;
 }
 /* Map */
 #mapMusee {
@@ -332,6 +360,7 @@ fieldset{
     background-color: transparent;
     box-shadow: unset;
 }
+#mapMusee .leaflet-marker-icon.country-marker:not(.neighbor),
 #mapMusee .continent-marker:not(.neighbor),
 #mapMusee .city-marker,
 #mapMusee .city-center,
@@ -430,7 +459,7 @@ fieldset{
 #mapMusee .city-container .city-marker.unknown{
     aspect-ratio : 1 / 1;
     color: #001B3B;
-    background-color: rgba(179,214,253,0.6);
+    background-color: rgba(179,214,253,0.8);
     border-radius: 50%;
     transform: none;
     bottom: unset;
@@ -645,7 +674,7 @@ fieldset{
 
 /* Cartel */
 #cartel-container{
-    width: 30vw;
+    width: 60vw;
     height: fit-content;
     min-width: 300px;
     min-height: 350px;
@@ -656,7 +685,16 @@ fieldset{
     left: 50%;
     transform: translate(-50%, -50%);
     pointer-events: all;
-    padding: 0 20px;
+    box-sizing: border-box; 
+}
+#cartel-container .slick-slide{
+    width: 60vw;
+    height: fit-content;
+    min-width: 300px;
+    min-height: 350px;
+    max-width: 500px;
+    max-height: 650px;
+    box-sizing: border-box; 
 }
 #cartel-container .incontournable{
     position: absolute;
@@ -707,6 +745,7 @@ fieldset{
     height: 100%;
 }
 
+
 #cartel-container .cartel-textes{
     padding: 1em;
 }
@@ -748,6 +787,7 @@ fieldset{
     text-transform: uppercase;
     text-align: left;
 }
+#mapMusee .text-hierarchy,
 #mapMusee .lieu-creation,
 #mapMusee .text-btn{
     font-family: 'SourceSansPro', 'Arial', 'Helvetica', sans-serif;
@@ -757,9 +797,18 @@ fieldset{
     margin: 0.5em 3px 1em 0;
     padding: 0;
 }
+#mapMusee .lieu-creation{
+    margin-bottom: 0.5em;
+    font-size: 1em;
+    font-weight: bold;
+}
+#mapMusee .text-hierarchy{
+    font-size: 1em;
+}
 #mapMusee .text-btn:hover{
     color: #6DA7C0;
 }
+#mapMusee .text-hierarchy:not(:last-child)::after,
 #mapMusee .text-btn:not(:last-child)::after{
     content: " | ";
     margin-left: 3px;
@@ -806,6 +855,7 @@ fieldset{
     position: absolute;
     z-index: 10000;
     top: 50%;
+    margin: 0 20px;
 }
 #mapMusee #close-slider{
     top: 0;
@@ -871,4 +921,19 @@ fieldset{
     bottom: 50px;
     right: 5%;
     opacity: 1;
+}
+/* ////////// RESPONSIVE ////////// */
+@media screen and (max-height:500px){
+    
+    #open-close-filter.open.fullscreen-filters{
+        left: 280px;
+        bottom: 50px;
+    }
+        
+    #open-close-filter.fullscreen-filters{
+        bottom: 50px;
+    }
+    #mapFilter.open {
+        left: 0px;
+    }
 }
