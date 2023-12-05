@@ -3,20 +3,38 @@
 	<div id="mapElementContainer">
 		<aside id="mapFilter">
 			<div>
-				<h3>Filtres</h3>
+				<h2>Filtres</h2>
 				<p id="nb-items"></p>
 			</div>
-			<form class="search-bar" action="" id="search-bar"><fieldset id="record-search"><label for="with-records">Objets enregistrés (audio)</label> <input type="checkbox" id="with-records" name="with-records" /></fieldset>
-				<div id="search-field"><input type="text" id="seeker" placeholder="Nom, Type, Facteur..." /> <button id="search" class="btn btn-default" type="submit" aria-label="Rechercher"> <img src="/ui/plug-in/integration/carte-instrument-musee/img/search.svg" alt="Rechercher" loading="lazy" /> </button></div>
+			<h3>Recherche</h3>
+			<form class="search-bar" action="" id="search-bar">
+				<div id="search-field">
+					<input type="text" id="seeker" placeholder="Nom, Type, Facteur..." name="seeker" /> 
+					<button id="search" class="btn btn-default" type="submit" aria-label="Rechercher"> 
+						<img src="/ui/plug-in/integration/carte-instrument-musee/img/search.svg" alt="Rechercher" loading="lazy" /> 
+					</button>
+				</div>
 			</form>
 			<h3>Lieu de création</h3>
-			<div class="custom-select"><select name="localisation" id="loc-select" placeholder="Choisissez une localisation">
-				<option disabled="disabled" selected="selected" value="">Choisissez une localité</option>
+			<div class="custom-select">
+				<select name="localisation" id="loc-select" placeholder="Choisissez une localisation">
+					<option disabled="disabled" selected="selected" value="">Choisissez une localité</option>
 				</select>
-				<h3>Types d'Objets</h3>
-				<fieldset class="types" id="types-filter"></fieldset></div>
+			</div>
+			<h3>Objets enregistrés (audio)</h3>
+			<form class="search-bar" action="" id="record-widget">
+				<fieldset id="record-search">
+					<label class="toggle">
+						<input class="toggle-checkbox" type="checkbox" id="with-records" name="with-records">
+							<div class="toggle-switch"></div>
+						<span class="toggle-label">Enregistrés uniquement</span>
+					</label>
+				</fieldset>
+			</form>
+			<h3>Types d'Objets</h3>
+			<fieldset class="types" id="types-filter"></fieldset>
 		</aside>
-		<button id="open-close-filter" type="button" aria-pressed="false"> <img class="img-close" src="/ui/plug-in/integration/carte-instrument-musee2/img/filters.svg" alt="Filtres" loading="lazy" /> <img class="img-open" src="/ui/plug-in/integration/carte-instrument-musee2/img/close.svg" alt="Filtres" loading="lazy" />
+		<button id="open-close-filter" type="button" aria-pressed="false"> <img src="/ui/plug-in/integration/carte-instrument-musee/img/filters.svg" alt="Filtres" loading="lazy" />
 			<p>Filtres</p>
 		</button>
 		<div id="mapMusee"></div>

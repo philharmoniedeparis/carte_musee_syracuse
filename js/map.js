@@ -296,6 +296,9 @@ function generalMapMusee(data, initial_data = false){
       // Création du bouton Réinitialiser les filtres
       createResetButton(window.mapMusee)
 
+      // Création des légendes de la carte
+      createLegend(window.mapMusee)
+
       // Hide loader
       $(".loader").hide();
 }
@@ -363,7 +366,7 @@ return unique
  */
 const createMap = (initialView) => {
     var map = L.map('mapMusee', { 
-        scrollWheelZoom: true, 
+        scrollWheelZoom: true,
         minZoom :  2, // Note pour le futur: un bug dans leaflet fait qu'une valeur de minZoom non Int fait disparaitre les marqueurs uniques.
         maxZoom: 12,
     }).setView(initialView.latlng, initialView.zoom);
@@ -373,6 +376,14 @@ const createMap = (initialView) => {
     }).addTo(map)
     window.fullScreenControl = L.control.fullscreen({ /* options */ });
     map.addControl(window.fullScreenControl);
+
+    // Centrer les popup lors de leurs ouvertures
+    map.on('popupopen', function(e) {
+      var px = map.project(e.target._popup._latlng);
+      px.y -= e.target._popup._container.clientHeight/2; 
+      map.panTo(map.unproject(px),{animate: true}); 
+    });
+
     return map
 }
 
@@ -431,7 +442,7 @@ const onEachTopojson = (features, layer) => {
       click: (e) => {
         if(!hasNotices(layer)) { return }
         displayCountryMarkers(e)
-        
+        updateSelectedZone()
        } 
     })
     layer.on( "mouseover", e => { 
@@ -758,8 +769,7 @@ function createMarker(city, cityData) {
  */
 function createUnknownMarker(latlng, label, count, notices){
   var html = `<div class="country-marker unknown">
-                <p class="continent_unknown_country">${label} : </p>
-                <p>Sans Localisation</p><p class="marker-count">${count} Objet(s)</p>
+                <p class="marker-count">${count}</p>
               </div>`
   var icon = L.divIcon({ 
     html: html,
@@ -885,9 +895,11 @@ const createPopupContinent = (continent_object) => {
   
     var selectedContinentKey = `0${normalize_string(continentName)}`;
     selectizeItem[0].selectize.setValue(selectedContinentKey);
+
+    updateSelectedZone()
     updateCountObjects();
   });
-  
+
   return popupContent
 }
 
@@ -1071,36 +1083,48 @@ const createMarkerPopup = notices => {
       return container;
   }
 
+  const cityContainer = createCityContainer(notices);
+  container.appendChild(cityContainer);
+  //console.log(cityContainer)
+
   // Création de la rosace des catégories
   const categories = [...new Set(notices.map(notice => notice["Type d'objet"]))];
   const angleUnit = 360 / categories.length * Math.PI / 180;
   let angle = -90 * Math.PI / 180;
-  const radius = 100;
+  const radius = 120;
+
+  var offsetCenterX = 35
+  var offsetCenterY = 5
 
   categories.forEach(category => {
       const catNotices = notices.filter(notice => notice["Type d'objet"] === category);
       const catInfo = window.object_type.find(obj => obj.label === category);
       const catNamePluriel = catInfo ? catInfo.label_pluriel.replace("Oe", "Œ") : "";
 
-      const posX = categories.length > 1 ? radius * Math.cos(angle) - 35 : 0;
-      const posY = radius / 1.5 * Math.sin(angle);
+      const posX = categories.length > 2 ? radius * Math.cos(angle) - offsetCenterX : 0;
+      const posY = radius / 1.5 * Math.sin(angle) + offsetCenterY;
       angle += angleUnit;
+      
+      var type_config = window.object_type.find(type => { return type.label == category})
 
       const buttonCat = document.createElement("button");
       buttonCat.className = `cat_button ${normalize_string(category).replace("'", "_")}`;
-      buttonCat.style.transform = `translate(${posX}px, ${posY}px)`;
+      buttonCat.setAttribute("style", `background-color: ${type_config.color}; transform: translate(${posX}px, ${posY}px)`)
+      //buttonCat.style.backgroundColor = category.color;
+      //buttonCat.style.transform = `translate(${posX}px, ${posY}px)`;
       buttonCat.title = `Voir une sélection des ${catNamePluriel}`;
 
       buttonCat.onclick = e => createCartel(e, catNotices);
 
       const itemNumber = document.createElement("p");
       itemNumber.textContent = catNotices.length;
+
+      let icon = document.createElement("img")
+      icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee2/${type_config.icon}`);
+      itemNumber.appendChild(icon)
       buttonCat.appendChild(itemNumber);
       container.appendChild(buttonCat);
   });
-
-  const cityContainer = createCityContainer(notices);
-  container.appendChild(cityContainer);
 
   return container;
 };
@@ -1118,7 +1142,7 @@ function createCityContainer(notices) {
   cityContainer.title = "Voir une sélection des éléments";
 
   const nameElement = document.createElement("p");
-  nameElement.textContent = notices[0].Ville || `${notices[0].Pays} (Sans localisation)`;
+  nameElement.innerHTML = notices[0].Ville || `${notices[0].Pays} <br> (Sans localisation)`;
   cityContainer.appendChild(nameElement);
 
   const totalNumber = document.createElement("p");
@@ -1150,7 +1174,7 @@ const createCartel = (e, notices) => {
       rand_notices.map(notice => { incontournables.push(notice)})
   } 
   
-  var parent = $(e.target).parent(".popup-container")[0] || $(e.target).parent().parent(".popup-container")[0] || e
+  var parent = $(e.target).parents(".popup-container")[0]
 
   // Remove existing cartel
   if($("#cartel-container").length){ $("#cartel-container").remove() }
@@ -1202,7 +1226,7 @@ const createCartel = (e, notices) => {
 
       let type_icon = document.createElement("img")
           type_icon.setAttribute("class", "type-icon")
-          type_icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee/img/${normalize_string(notice["Type d'objet"]).replace("'", "_")}.svg`)
+          type_icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee2/img/${normalize_string(notice["Type d'objet"]).replace("'", "_")}.svg`)
           type_icon.setAttribute("alt", notice["Type d'objet"])
           title_section.appendChild(type_icon)
 
@@ -1522,6 +1546,7 @@ function handleFilters() {
         }
       });
     }
+    updateSelectedZone()
   });
 
 
@@ -1947,6 +1972,8 @@ const populateObjectTypes = data => {
   var parent = document.getElementById("types-filter")
 
   $(`#types-filter .radio`).remove();
+  types.sort((a, b) => (a.order > b.order) ? 1 : -1)
+  console.log(types)
 
   types.map(type => {
       if (type.name == "all") { 
@@ -1955,7 +1982,7 @@ const populateObjectTypes = data => {
 
           let label = document.createElement("label")
           label.setAttribute("for", "all-types")
-          label.textContent = "Toutes les catégories"
+          label.textContent = "Tous les types d'objets"
           radio_container.appendChild(label)
 
           let input = document.createElement("input")
@@ -1979,7 +2006,7 @@ const populateObjectTypes = data => {
       
       let icon = document.createElement("img")
       icon.setAttribute("class", "type-icon")
-      icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee/${type.icon}`) 
+      icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee2/${type.icon}`) 
       
       icon.setAttribute("alt", "")
       radio_container.appendChild(icon)
@@ -2205,6 +2232,77 @@ function createResetButton(map) {
   resetControl.addTo(map);
 
 } 
+
+
+/**
+ * Fonction de création des légendes de la carte
+ * @param {Object}map - Variable contenant l'objet carte
+ */
+function createLegend(map) {
+
+  // Création d'une div contenant la zone sélectionnée
+  var legendCartel = document.createElement("div")
+  legendCartel.id= "legend-cartel"
+  legendCartel.setAttribute("class", "leaflet-bar leaflet-control")
+
+  let selectedZoneContainer = document.createElement("p")
+  selectedZoneContainer.textContent = "Zone sélectionnée : "
+  let selectedZone = document.createElement("b")
+  selectedZone.textContent = "Monde"
+
+  selectedZoneContainer.appendChild(selectedZone)
+
+  legendCartel.appendChild(selectedZoneContainer)
+
+  
+  // Ajoutez la zone sélectionnée à la carte
+  var zoneContainer = L.control({ position: 'topleft' });
+  zoneContainer.onAdd = function() {
+      return legendCartel;
+  };
+  zoneContainer.addTo(map);
+
+
+  // Création des légendes
+  let legendItemContainer = document.createElement("div")
+  legendItemContainer.setAttribute("class", "legend")
+
+  let legendKnown = document.createElement("div")
+  let iconKnown = document.createElement("p")
+  iconKnown.setAttribute("class", "country-marker marker-count")
+  iconKnown.textContent = "X"
+  legendKnown.appendChild(iconKnown)
+
+  let knownLabel = document.createElement("p")
+  knownLabel.textContent = "Objets avec localisation connues"
+  legendKnown.appendChild(knownLabel)
+
+  let legendUnknown = document.createElement("div")
+  let iconUnknown = document.createElement("p")
+  iconUnknown.setAttribute("class", "country-marker marker-count unknown")
+  iconUnknown.textContent = "X"
+  legendUnknown.appendChild(iconUnknown)
+
+  let unknownLabel = document.createElement("p")
+  unknownLabel.setAttribute("class", "label-legend")
+  unknownLabel.textContent = "Objets sans localisation définies"
+  legendUnknown.appendChild(unknownLabel)
+
+
+  legendItemContainer.appendChild(legendKnown)
+  legendItemContainer.appendChild(legendUnknown)
+
+  document.getElementById("mapElementContainer").appendChild(legendItemContainer)
+} 
+
+/**
+ * Fonction de mise à jour de la zone sélectionnée
+ */
+function updateSelectedZone(){
+  let selectionValue =  selectizeItem[0].selectize.getValue();
+  let selectedZone = selectionValue == "empty" ? "Monde" : selectizeItem[0].selectize.$input[0].innerText.replace("0", "").replace(/\r?\n/gm, "");
+  document.querySelector("#legend-cartel b").textContent = selectedZone
+}
 
 /**
  * Gère l'ouverture et la fermeture du menu des filtres sur la carte.
