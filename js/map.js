@@ -1,45 +1,38 @@
 /* Lien github : https://github.com/ChristopheLeonardi/carte-musee-syracuse */
 
-// Chargement des données
+/**
+ * Attend le chargement des données avant de lancer la fonction `generalMapMusee`.
+ * La fonction vérifie périodiquement si les données sont chargées et, une fois chargées,
+ * appelle la fonction `generalMapMusee` pour initialiser la carte.
+ *
+ * @param {Promise[]} promises - Un tableau de promesses représentant les requêtes de données.
+ */
 var promises = []
 function wait_for_data(promises) {
     get_data(promises)
     typeof window["data"] !== "undefined" ? generalMapMusee(window["data"]) : setTimeout(wait_for_data, 250);   
 }
 
+/**
+ * Charge et décompresse des fichiers JSON gzip à partir d'URLs spécifiées.
+ * Utilise `fetch` pour charger chaque fichier et `pako.inflate` pour décompresser les données.
+ * Une fois les données chargées et décompressées, elles sont stockées dans la variable globale `window["data"]`.
+ * La fonction gère également un délai d'attente pour les requêtes et capture les erreurs potentielles lors du chargement.
+ *
+ * @param {Promise[]} promises - Un tableau de promesses pour gérer les requêtes asynchrones.
+ *                               Si `promises` n'est pas défini, un nouveau tableau est créé.
+ */
 function get_data(promises) {
   const controller = new AbortController();
   try {
     if (promises == undefined) { var promises = [] }
-    /* Test d'optimisation, charger directement fichier json sortedData */
-    // Mettez à jour l'URL du fichier CSV compressé au format gzip
-    /* promises.push(
-      fetch('/ui/plug-in/integration/carte-instrument-musee/data/data-carte2_2023-11-06.csv.gz')
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Erreur HTTP : ${response.status}`);
-          }
-          return response.arrayBuffer(); // Utilisez arrayBuffer pour récupérer les données brutes
-        })
-        .then(arrayBuffer => {
-          // Décompressez le contenu avec pako
-          const inflatedData = pako.inflate(new Uint8Array(arrayBuffer), { to: 'string' });
-
-          // Parsez le contenu décompressé en CSV avec d3
-          return d3.tsvParse(inflatedData);
-          //return d3.csvParse(inflatedData);
-
-        })
-    ); */
-
+    
     // Liste des URL des fichiers JSON gzip
     const jsonUrls = [
-      '/ui/plug-in/integration/carte-instrument-musee/data/sortedData.json.gz',
-      //'/ui/plug-in/integration/carte-instrument-musee/data/amerique.json.gz',
-      //'/ui/plug-in/integration/carte-instrument-musee/data/reste.json.gz',
-      '/ui/plug-in/integration/carte-instrument-musee/data/config.json.gz',
-      '/ui/plug-in/integration/carte-instrument-musee/data/countries_codes_and_coordinates.json.gz',
-      '/ui/plug-in/integration/carte-instrument-musee/data/output-topo.json.gz',
+      '/ui/plug-in/integration/carte-instrument-musee2/data/sortedData.json.gz',
+      '/ui/plug-in/integration/carte-instrument-musee2/data/config.json.gz',
+      '/ui/plug-in/integration/carte-instrument-musee2/data/countries_codes_and_coordinates.json.gz',
+      '/ui/plug-in/integration/carte-instrument-musee2/data/output-topo.json.gz',
     ];
 
     // Utilisez une boucle pour charger et décompresser les fichiers JSON
@@ -81,9 +74,16 @@ $(document).ready(function() {
   
 });
 
-/* PROCESS DATA */
-/* !!!!! TIMESPENDER !!!!! */
-/* WAIT FOR DIRECT EXPORT */
+/**
+ * Crée un objet de données structuré à partir de données brutes sur des instruments, des informations sur les continents et des données de pays.
+ * Cette fonction organise les données d'instruments par continent et pays, comptabilise les types d'objets,
+ * et construit une structure de données détaillée pour une utilisation ultérieure dans l'affichage de la carte.
+ *
+ * @param {Object[]} instruments_data - Tableau d'objets représentant les données des instruments.
+ * @param {Object} continent_infos - Objet contenant des informations sur les continents, telles que les noms et les coordonnées.
+ * @param {Object[]} data_countries - Tableau d'objets contenant des informations sur les pays, y compris les codes ISO et les coordonnées.
+ * @returns {Object} Un objet structuré contenant les données organisées par continents et pays, ainsi que d'autres métadonnées utiles.
+ */
 const createDataObject = (instruments_data, continent_infos, data_countries) => {
   const c_data = {
       pays: new Set(),
@@ -160,20 +160,18 @@ function download(content, fileName, contentType) {
   a.click();
 }
 
+/**
+ * Fonction principale pour initialiser et configurer la carte interactive du musée.
+ * Cette fonction gère la création et l'affichage de la carte, des marqueurs, des clusters, des filtres et des interactions utilisateur.
+ * Elle prend en charge les données initiales, configure les vues et les événements, et initialise les composants interactifs de l'interface utilisateur.
+ *
+ * @param {Object} data - Les données brutes et configurées nécessaires pour initialiser la carte.
+ * @param {Object} [initial_data=false] - Données initiales optionnelles pouvant être utilisées pour réinitialiser ou reconfigurer la carte.
+ */
 function generalMapMusee(data, initial_data = false){
     console.log(data)
-    console.time("generalMap")
-    const continent_infos  = data[1].continents_infos
-    const object_type = data[1].object_type
     const data_countries = data[2]
 
-    /* Export sortedData */
-    
-    /* const instruments_data = data[0]
-    const sortedData = createDataObject(instruments_data, continent_infos, data_countries) 
-    console.log(sortedData)
-    download(JSON.stringify(sortedData), 'sortedData.json', 'text/plain');  */
-   
 
     const sortedData = data[0] 
     window["sortedData"] = data[0] 
@@ -190,23 +188,21 @@ function generalMapMusee(data, initial_data = false){
       "countries": {}
     }
     window["continents_popups"] = []
-    window["neighbors"] = []
     window["object_type"] = data[1].object_type
     window["topojson_data"] = []
     window["data_countries"] =  data[2]
     window["object_type_data"] =  data[1]
     window["output_topo_data"] =  data[3]
-    window["initial_data"] = initial_data || data[0]
+    window["initial_data"] = initial_data || data
 
 
     // Création des layers des pays, comportement au hover et clique
-    let countries_data = [{ "data" : data[3], "name" : "world" }]
+    let countries_data = { "data" : data[3], "name" : "world" }
     createCountriesLayers(countries_data)
 
     // Création des clusters
     window.groups = createCluster(sortedData, data_countries)
 
-    
     // Création des Boutons continents
     createContinentMarkers(sortedData)
 
@@ -217,53 +213,16 @@ function generalMapMusee(data, initial_data = false){
     document.getElementById("nb-items").textContent = window.sortedData.raw_data.length + " Objet(s)"
 
     // Ouvrir et fermer le menu des filtres
-    $("#open-close-filter").click(e => {
-      $("#mapFilter, #open-close-filter, #mapMusee").toggleClass("open")
-      onkeyup = e => {
-        if ((e.keyCode == 27) && $("#mapFilter, #open-close-filter, #mapMusee").hasClass("open")){
-          $("#mapFilter, #open-close-filter").removeClass("open")
-        }
-      };
-    })
+    openCloseFilters()
+
 
     // Filters 
     createOptionsLocalisation(window.sortedData)
     populateObjectTypes(window.sortedData)
     displayResultNumber(window.sortedData)
-    console.timeEnd("generalMap")
-
-    // Comportement au dezoom
-window.mapMusee.on('moveend', function() {
-  if(window.mapMusee.getZoom() <= 2.5) {
-    // Regroupez les opérations de suppression de layers pour minimiser les appels de fonction
-    const allLayersToRemove = [
-      ...Object.values(window.groups.countriesGroup), 
-      ...Object.values(window.unknown_markers.countries),
-      ...window.neighbors,
-      ...Object.values(window.groups.continentGroup),
-      ...Object.values(window.unknown_markers.continents)
-    ];
-
-    allLayersToRemove.forEach(layer => window.mapMusee.removeLayer(layer));
-
-    // Ajout en masse de tous les popups de continents
-    window.continents_popups.forEach(popup => window.mapMusee.addLayer(popup));
-
-    // Optimisation de la sélection jQuery
-    const selectedCountryElement = selectizeItem[0].selectize;
-    const selectedCountry = selectedCountryElement.getValue();
-    if(selectedCountry) {
-      const countryPath = `path.${selectedCountry.toLowerCase()}`;
-      const $countryPath = $(countryPath);
-      $countryPath.css({ opacity: 0, fillOpacity: 0 }).removeClass("selected");
-      selectedCountryElement.setValue("empty");
-    }
-
-    updateCountObjects();
-  }
 
 
-});
+    zoomEventHandler()
 
     // Ajoute un écouteur d'événements pour détecter les changements de mode plein écran
     document.addEventListener('fullscreenchange', onFullScreenChange);
@@ -274,16 +233,28 @@ window.mapMusee.on('moveend', function() {
     // Création du bouton Réinitialiser les filtres
     createResetButton(window.mapMusee)
 
+    // Création des légendes de la carte
+    createLegend(window.mapMusee)
+
     // Hide loader
     $(".loader").hide();
 }
 
+/**
+ * Fonction pour rendre la carte responsive.
+ * Ajuste dynamiquement la hauteur de la carte et des filtres en fonction de la taille de la fenêtre du navigateur.
+ */
 function responsiveMap(){
   setResponsiveHeight()
   addEventListener("resize", () => {
       setResponsiveHeight()
   });
 }
+
+/**
+ * Ajuste la hauteur des éléments de la carte pour s'adapter à la taille de la fenêtre.
+ * Calcule et applique la hauteur nécessaire à la carte et aux filtres pour un affichage optimal sur différents appareils.
+ */
 function setResponsiveHeight(){
   var margin = 40
   var titleHeight = $('.map-title').outerHeight(true)
@@ -296,10 +267,24 @@ function setResponsiveHeight(){
   mapContainer.style.height = mapElementsHeight + "px"
 }
 
+/**
+ * Normalise et formate une chaîne de caractères pour une utilisation uniforme.
+ * Remplace les caractères spéciaux et les espaces par des underscores et convertit en minuscules.
+ *
+ * @param {string} str - La chaîne de caractères à normaliser.
+ * @return {string} La chaîne normalisée.
+ */
 const normalize_string = str => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/gm, "_").toLowerCase()
 }
   
+/**
+ * Élimine les doublons d'un tableau d'objets en se basant sur une clé spécifique.
+ *
+ * @param {Object[]} arr - Le tableau d'objets à traiter.
+ * @param {string} key - La clé utilisée pour identifier les doublons.
+ * @return {Object[]} Un tableau sans doublons.
+ */
 const removeDuplicateObject = (arr, key) => {
     const unique = [];
     for (const item of arr) {
@@ -309,38 +294,159 @@ const removeDuplicateObject = (arr, key) => {
 return unique
 }
 
-  const createMap = (initialView) => {
-      var map = L.map('mapMusee', { 
-          scrollWheelZoom: true, 
-          minZoom :  2, // Note pour le futur: un bug dans leaflet fait qu'une valeur de minZoom non Int fait disparaitre les marqueurs uniques.
-          maxZoom: 12,
-      }).setView(initialView.latlng, initialView.zoom);
-    
-      L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map)
-      window.fullScreenControl = L.control.fullscreen({ /* options */ });
-      map.addControl(window.fullScreenControl);
-      return map
-  }
+/**
+ * Crée et initialise une carte Leaflet.
+ * Configure les options de base telles que le zoom et les tuiles de la carte.
+ *
+ * @param {Object} initialView - Objet contenant les coordonnées initiales (latlng) et le niveau de zoom de la vue de la carte.
+ * @return {L.map} L'instance de la carte Leaflet créée.
+ */
+const createMap = (initialView) => {
+    var map = L.map('mapMusee', { 
+        scrollWheelZoom: true,
+        minZoom :  2, // Note pour le futur: un bug dans leaflet fait qu'une valeur de minZoom non Int fait disparaitre les marqueurs uniques.
+        maxZoom: 12,
+        maxBoundsViscosity: 0.8,
+    }).setView(initialView.latlng, initialView.zoom);
+    map.setMaxBounds([ [-65, -180], [180, 440] ])
+    L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map)
+    window.fullScreenControl = L.control.fullscreen({ /* options */ });
+    map.addControl(window.fullScreenControl);
 
+    // Centrer les popup lors de leurs ouvertures sauf les popups de continents
+    map.on('popupopen', function(e) {
+      if (e.popup.getContent().getAttribute("data-continent")) { return }
+      var px = map.project(e.target._popup._latlng);
+      px.y -= e.target._popup._container.clientHeight/2; 
+      map.panTo(map.unproject(px),{animate: true}); 
+    });
+
+    return map
+}
+
+/**
+ * Fonction programmant la gestion du zoom sur la carte et l'affichage des marqueurs et clusters
+ */
+function zoomEventHandler(){
+
+  // Comportement au dezoom
+  window.mapMusee.on('moveend', function() {
+    var selectedCountry = selectizeItem[0].selectize.getValue();
+    const currentZoom = window.mapMusee.getZoom();
+    const continentsLayerGroups = Object.values(window.groups.continentGroup);
+    const unknownContinentsMarkers = Object.values(window.unknown_markers.continents);
+    const continentsPopups = Object.values(window.continents_popups);
+    const countriesLayerGroups = Object.values(window.groups.countriesGroup);
+    const unknownCountriesMarkers = Object.values(window.unknown_markers.countries);
+
+    if (selectedCountry == "empty") {
+      selectedCountry = false;
+    }
+
+    if (selectedCountry && /^(?!0)/.test(selectedCountry)) {
+      continentsLayerGroups.forEach(continent => {
+        if (!window.mapMusee.hasLayer(continent)) {
+          window.mapMusee.addLayer(continent);
+        }
+        if (continent._layers) {
+          const foundLayerId = Object.keys(continent._layers).find(id => continent._layers[id].data.country_code == selectedCountry);
+          if (foundLayerId) {
+            window.mapMusee.removeLayer(continent._layers[foundLayerId]);
+          }
+        }
+      });
+    } else if (!selectedCountry && currentZoom >= 3) {
+      const allLayersToRemove = [
+        ...continentsPopups,
+        ...countriesLayerGroups,
+        ...unknownCountriesMarkers,
+        ...continentsLayerGroups,
+        ...unknownContinentsMarkers
+      ];
+      allLayersToRemove.forEach(layer => window.mapMusee.removeLayer(layer));
+
+      continentsLayerGroups.forEach(continent => {
+        if (!window.mapMusee.hasLayer(continent)) {
+          window.mapMusee.addLayer(continent);
+        }
+      });
+    }
+
+    if (currentZoom <= 2.5) {
+      unknownContinentsMarkers.forEach(continent => {
+        if (window.mapMusee.hasLayer(continent)) {
+          window.mapMusee.removeLayer(continent);
+        }
+      });
+      continentsLayerGroups.forEach(continent => {
+        if (window.mapMusee.hasLayer(continent)) {
+          window.mapMusee.removeLayer(continent);
+        }
+      });
+
+      continentsPopups.forEach(popup => window.mapMusee.addLayer(popup));
+
+      if (selectedCountry) {
+        const countryPath = `path.${selectedCountry.toLowerCase()}`;
+        const $countryPath = $(countryPath);
+        $countryPath.removeClass("selected");
+
+        
+        if (window.groups.countriesGroup[selectedCountry]) {
+          const allLayersToRemove = [
+            window.groups.countriesGroup[selectedCountry],
+            ...unknownCountriesMarkers,
+          ];
+          allLayersToRemove.forEach(layer => window.mapMusee.removeLayer(layer));
+        }
+        
+        selectizeItem[0].selectize.setValue("empty");
+      }
+    }
+
+    updateCountObjects();
+
+
+  });
+}
+/**
+ * Crée les layers des pays à partir des données TopoJSON.
+ * Chaque couche de pays est ajoutée à la carte Leaflet.
+ *
+ * @param {Object[]} data - Tableau d'objets contenant les données TopoJSON.
+ */
 const createCountriesLayers = (data) => {
 
-    data.map( dataset => {
-        let topo = topojson.feature(dataset.data, dataset.data.objects[dataset.name])
-        window.countries_layers.push(L.geoJson(topo, { onEachFeature: onEachTopojson, style: style }).addTo(window.mapMusee))
-    })
+    let topo = topojson.feature(data.data, data.data.objects[data.name]);
+    window.countries_layers.push(L.geoJson(topo, { onEachFeature: onEachTopojson, style: style }).addTo(window.mapMusee))
 
 }
 
+/**
+ * Fonction de style pour les couches GeoJSON.
+ * Définit le style de remplissage, d'opacité et les classes CSS pour les entités géographiques.
+ *
+ * @param {Object} features - Les caractéristiques de l'entité géographique.
+ * @return {Object} Un objet de style pour la couche GeoJSON.
+ */
 const style = features => {
-    return {
-        fillColor: "#001B3B",
-        opacity: 0,
-        fillOpacity: 0,
-        className: `${normalize_string(features.properties.CONTINENT)} ${normalize_string(features.properties.ISO_A2_EH)}`,
-    }
+  return {
+      fillColor: "#001B3B",
+      opacity: 0,
+      fillOpacity: 0,
+      className: `${normalize_string(features.properties.CONTINENT)} ${normalize_string(features.properties.ISO_A2_EH)}`,
   }
+}
+
+/**
+ * Fonction appelée sur chaque entité TopoJSON lors de la création des couches GeoJSON.
+ * Ajoute des identifiants aux couches, définit les interactions (clic, survol) et filtre les couches sans notices.
+ *
+ * @param {Object} features - Les caractéristiques de l'entité TopoJSON.
+ * @param {L.Layer} layer - La couche Leaflet correspondante.
+ */
 const onEachTopojson = (features, layer) => {
     // Add id to layer 
     var topojson_data = []
@@ -358,19 +464,27 @@ const onEachTopojson = (features, layer) => {
       click: (e) => {
         if(!hasNotices(layer)) { return }
         displayCountryMarkers(e)
-        
+        updateSelectedZone()
        } 
     })
     layer.on( "mouseover", e => { 
       if(!hasNotices(layer)) { return }
-      $(e.target._path).css({ opacity: 0.6, fillOpacity: 0.6 })
+      $(e.target._path).addClass("selected")
     })
   
     layer.on( "mouseout", e => { 
       if(!hasNotices(layer)) { return }
-      $(e.target._path).css({ opacity: 0, fillOpacity: 0 })
+      $(e.target._path).removeClass("selected")
     })
 }
+
+/**
+ * Détermine si une couche de pays contient des notices en fonction des filtres actifs.
+ * Utilise les filtres sélectionnés pour vérifier si des notices correspondantes existent pour un pays donné.
+ *
+ * @param {L.Layer} layer - La couche de pays à vérifier.
+ * @return {boolean} Vrai si des notices correspondant aux critères de filtre existent, faux sinon.
+ */
 function hasNotices(layer){
   var selectedCountry = layer.layerID
   var isRecordChecked = document.getElementById("with-records").checked;
@@ -392,7 +506,16 @@ function hasNotices(layer){
   return count == 0 ? false : true
 }
 
+/**
+ * Crée des clusters de marqueurs pour les continents et les pays.
+ * Utilise Leaflet markerClusterGroup pour regrouper les marqueurs par continent et pays.
+ *
+ * @param {Object} sortedData - Données triées par continent et pays.
+ * @param {Object[]} data_countries - Données des pays incluant les coordonnées et les codes.
+ * @return {Object} Objets contenant les groupes de clusters pour les continents et les pays.
+ */
 function createCluster(sortedData, data_countries) {
+
   var parentGroup = L.markerClusterGroup({
     showCoverageOnHover: false,
     iconCreateFunction: function(cluster) {
@@ -429,7 +552,7 @@ function createCluster(sortedData, data_countries) {
     getHoverCountryCluster(event, 0)
 
   })
-
+  
   window.mapMusee.addLayer(parentGroup);
 
   var overlayMaps = { ...continentGroupObject, ...countryGroupObject };
@@ -437,6 +560,14 @@ function createCluster(sortedData, data_countries) {
 
   return {"continentGroup" : continentGroupObject, "countriesGroup" : countryGroupObject}
 }
+
+/**
+ * Gère l'événement de survol sur les clusters de pays.
+ * Modifie l'opacité des pays lors du survol d'un cluster.
+ *
+ * @param {Object} event - Événement déclenché par le survol d'un cluster.
+ * @param {number} opacity - Opacité à appliquer aux pays lors du survol.
+ */
 function getHoverCountryCluster(event, opacity){
   var selected_countries = []
   var markers = event.layer._markers
@@ -456,6 +587,14 @@ function getHoverCountryCluster(event, opacity){
   hoverCountryEffect(event, selected_countries, opacity)
 }
 
+/**
+ * Récupère les identifiants des marqueurs à partir d'un tableau de marqueurs.
+ * Utilisé pour identifier les pays dans un cluster lors du survol.
+ *
+ * @param {Array} markers - Tableau de marqueurs Leaflet.
+ * @param {Array} selected_countries - Tableau pour stocker les identifiants des pays récupérés.
+ */
+
 function getMarkersIds(markers, selected_countries){
   markers.map(marker => { 
     let id = $(marker.options.icon.options.html)
@@ -464,6 +603,14 @@ function getMarkersIds(markers, selected_countries){
     }
   })
 }
+
+/**
+ * Fonction pour créer l'icône d'un cluster de marqueurs.
+ * Calcule le nombre total d'objets dans le cluster et renvoie une icône personnalisée.
+ *
+ * @param {L.MarkerCluster} cluster - Cluster de marqueurs Leaflet.
+ * @return {Object} Objet contenant le HTML et la classe CSS pour l'icône du cluster.
+ */
 const cluster_icon = cluster => {
   var count  = 0
   cluster.getAllChildMarkers().map(country => {
@@ -475,6 +622,16 @@ const cluster_icon = cluster => {
   return { html: `<p class="country-marker marker-count">${count}</p>`, className: `continent-marker`}
 }
 
+/**
+ * Crée un marqueur pour un continent donné et l'ajoute à un groupe de clusters.
+ * Crée également un marqueur "inconnu" si nécessaire.
+ *
+ * @param {string} country_code - Code ISO du pays.
+ * @param {Object} parentGroup - Groupe parent pour le cluster.
+ * @param {Object} countryMarkers - Objet pour stocker les marqueurs de pays.
+ * @param {string} continent_name - Nom du continent.
+ * @param {Object} sortedData - Données triées contenant les informations des continents et des pays.
+ */
 function createContinentCluster(country_code, parentGroup, countryMarkers, continent_name, sortedData){
 
   // Skip si le marqueur existe déjà
@@ -505,6 +662,8 @@ function createContinentCluster(country_code, parentGroup, countryMarkers, conti
     }
 
     var countryMarker = L.marker( countryCenter, {icon: icon})
+
+
     countryMarker["data"] = markerData
     
     countryMarker.on('mouseover', function(event) {
@@ -518,12 +677,11 @@ function createContinentCluster(country_code, parentGroup, countryMarkers, conti
     countryMarker.on("click", function(e){
       displayCountryMarkers(e)
     })
+    parentGroup.addLayer(countryMarker); // Ajouter le marqueur du pays au groupe parent
+
     window.countryMarkers.push(countryMarker)
     countryMarkers[country_code] = countryMarker; // Stocker le marqueur du pays
-    parentGroup.addLayer(countryMarker); // Ajouter le marqueur du pays au groupe parent
   }
-
-
 
   if(continentNotices[country_code].cities[""] && (country_code == "" || !latlng)){
     var latlng = sortedData.continents[continent_name].latlng
@@ -533,10 +691,19 @@ function createContinentCluster(country_code, parentGroup, countryMarkers, conti
     countryMarker["type"] = "country"
     window.unknown_markers.continents[continent_name] = countryMarker 
   }
-
-
 }
 
+
+/**
+ * Crée un marqueur pour un continent donné et l'ajoute à un groupe de clusters.
+ * Crée également un marqueur "inconnu" si nécessaire.
+ *
+ * @param {string} country_code - Code ISO du pays.
+ * @param {Object} parentGroup - Groupe parent pour le cluster.
+ * @param {Object} countryMarkers - Objet pour stocker les marqueurs de pays.
+ * @param {string} continent_name - Nom du continent.
+ * @param {Object} sortedData - Données triées contenant les informations des continents et des pays.
+ */
 function createCountriesCluster(country_code_obj, country_code, countryGroupObject){
   if (!country_code_obj.cities) { return }
 
@@ -549,6 +716,7 @@ function createCountriesCluster(country_code_obj, country_code, countryGroupObje
     chunkedLoading: true,
     chunkInterval: 50, // Temps en ms entre le traitement des lots
     chunkDelay: 10,    // Délai supplémentaire pour maintenir la réactivité
+    maxClusterRadius: 150
 
   }); 
 
@@ -577,6 +745,15 @@ function createCountriesCluster(country_code_obj, country_code, countryGroupObje
       window.unknown_markers.countries[country_code] = cityMarker
       window.markers.push(cityMarker) 
 
+      cityMarker.on('mouseover', function(event) {
+        hoverCountryEffect(event, [country_code], 0.6)
+    
+      })
+      cityMarker.on('mouseout', function(event) {
+        hoverCountryEffect(event, [country_code], 0)
+    
+      })
+
     }
 
     if (cityData.notices[0]["Coordonnées"] != ""){
@@ -586,10 +763,39 @@ function createCountriesCluster(country_code_obj, country_code, countryGroupObje
       // Ajouter le marqueur au cluster du pays
       countryCluster.addLayer(marker);
       window.markers.push(marker) 
+
+      marker.on('mouseover', function(event) {
+        hoverCountryEffect(event, [country_code], 0.6)
+    
+      })
+      marker.on('mouseout', function(event) {
+        hoverCountryEffect(event, [country_code], 0)
+    
+      })
+
     }
+    countryCluster.on('clustermouseover', function(event) {
+      hoverCountryEffect(event, [country_code], 0.6)
+  
+    })
+    countryCluster.on('clustermouseout', function(event) {
+      hoverCountryEffect(event, [country_code], 0)
+  
+    })
+    
+
     
   });
 }
+
+/**
+ * Crée un marqueur Leaflet pour une ville donnée.
+ * Utilise les données de la ville pour créer un marqueur et une popup associée.
+ *
+ * @param {string} city - Nom de la ville.
+ * @param {Object} cityData - Données relatives à la ville, y compris les notices associées.
+ * @return {L.Marker} Un marqueur Leaflet pour la ville spécifiée.
+ */
 function createMarker(city, cityData) {
         let latitude = parseFloat(cityData.notices[0]["Coordonnées"].split(",")[0])
         let longitude =  enableAnteMeridian(parseFloat(cityData.notices[0]["Coordonnées"].split(",")[1]))
@@ -604,13 +810,22 @@ function createMarker(city, cityData) {
         var popup =  L.responsivePopup({ autoPanPadding: [10,10] }).setContent(createMarkerPopup(cityData.notices))
         var marker = L.marker([latitude, longitude], { icon: icon, bubblingMouseEvents: true, riseOnHover: true })
           .bindPopup(popup).openPopup();
+
         return marker
 }
 
+/**
+ * Crée un marqueur Leaflet pour une localisation "inconnue" avec un popup associé.
+ *
+ * @param {Array} latlng - Coordonnées [latitude, longitude] de la localisation.
+ * @param {string} label - Étiquette à afficher pour le marqueur.
+ * @param {number} count - Nombre total d'objets associés au marqueur.
+ * @param {Array} notices - Ensemble des notices associées au marqueur.
+ * @return {L.Marker} Un marqueur Leaflet pour la localisation inconnue.
+ */
 function createUnknownMarker(latlng, label, count, notices){
   var html = `<div class="country-marker unknown">
-                <p class="continent_unknown_country">${label} : </p>
-                <p>Sans Localisation</p><p class="marker-count">${count} Objet(s)</p>
+                <p class="marker-count">${count}</p>
               </div>`
   var icon = L.divIcon({ 
     html: html,
@@ -619,6 +834,8 @@ function createUnknownMarker(latlng, label, count, notices){
   var popup =  L.responsivePopup({ autoPanPadding: [10,10] }).setContent(createMarkerPopup(notices))
   var unknownMarker = L.marker( latlng, {icon: icon, bubblingMouseEvents: true, riseOnHover: true }) 
     .bindPopup(popup).openPopup();
+
+
   var markerData = {
     "notices": notices, 
     "count": count, 
@@ -632,11 +849,22 @@ function createUnknownMarker(latlng, label, count, notices){
   return unknownMarker
 }
 
+/**
+ * Ajuste la longitude pour gérer correctement les valeurs à l'ouest du méridien de Greenwich.
+ *
+ * @param {number|string} input - Longitude initiale.
+ * @return {number} Longitude ajustée.
+ */
 const enableAnteMeridian = input => {
   let lng = parseFloat(input)
   return lng < -20 ? lng +=360 : lng
 }
 
+/**
+ * Crée et ajoute des popups Leaflet pour chaque continent sur la carte.
+ *
+ * @param {Object} sortedData - Données triées contenant les informations des continents.
+ */
 function createContinentMarkers(sortedData) {
   // Remove old popups
   window.continents_popups.forEach(popup => {
@@ -656,7 +884,12 @@ function createContinentMarkers(sortedData) {
   })
 }
 
-/* Popup des Continents */
+/**
+ * Crée le contenu HTML d'un popup pour un continent.
+ *
+ * @param {Object} continent_object - Objet contenant les informations du continent.
+ * @return {HTMLElement} Un élément HTML représentant le contenu du popup.
+ */
 const createPopupContinent = (continent_object) => {
 
   let popupContent = document.createElement('div')
@@ -675,7 +908,7 @@ const createPopupContinent = (continent_object) => {
     e => { hoverCountryEffect(e, continent_object.liste_pays, 0.6) },
     e => { hoverCountryEffect(e, continent_object.liste_pays, 0) }
   )
-  $(popupContent).click(e => {
+  $(popupContent).on ("click", e => {
     var continentName = $(e.target).attr("data-continent") || $(e.target).parent().attr("data-continent");
   
     // Fonction pour ajouter ou retirer des couches
@@ -720,11 +953,14 @@ const createPopupContinent = (continent_object) => {
   
     var selectedContinentKey = `0${normalize_string(continentName)}`;
     selectizeItem[0].selectize.setValue(selectedContinentKey);
+
+    updateSelectedZone()
     updateCountObjects();
   });
-  
+
   return popupContent
 }
+
 /**
  * Modifie l'effet de survol sur les pays.
  * 
@@ -733,6 +969,7 @@ const createPopupContinent = (continent_object) => {
  * @param {number} opacity - L'opacité à appliquer.
  */
 const hoverCountryEffect = (e, countries_to_display, opacity) => {
+
   const continent_name = $(e.target).attr("data-continent") || $(e.target).parent().attr("data-continent");
   const normalize_continent_name = continent_name ? normalize_string(continent_name) : "";
   let svg_countries = [];
@@ -745,7 +982,7 @@ const hoverCountryEffect = (e, countries_to_display, opacity) => {
       svg_countries = Array.from(elements);
   } else {
       countries_to_display.forEach(country_code => {
-          if (country_code !== "") {
+          if (country_code && country_code !== "") {
               const elements = document.getElementById("mapMusee").getElementsByClassName(`${normalize_continent_name.toLowerCase()} ${country_code.toLowerCase()}`);
               svg_countries.push(...Array.from(elements));
           }
@@ -788,17 +1025,18 @@ function displayCountryMarkers(e) {
   }
 
   // Mise en évidence et traitement des layers de pays
-  let isCountryLayerFound = false;
   window.countries_layers.forEach(country_layer => {
       Object.values(country_layer._layers).forEach(layer => {
           const $path = $(layer._path);
-          if (layer.layerID === selectedCountry && !isCountryLayerFound) {
+          if ($path.hasClass("focused") == true ) { 
+            return
+          }
+
+          if (layer.layerID === selectedCountry) {
               window.mapMusee.fitBounds(layer._bounds);
-              $path.addClass("selected");
-              createMarkersNeighbors(layer.feature.properties.borders_iso_a2.split(","), layer._bounds);
-              isCountryLayerFound = true;
-          } else if (isCountryLayerFound) {
-              $path.removeClass("selected");
+              $path.addClass("selected focused");
+          } else {
+              $path.removeClass("selected focused");
           }
       });
   });
@@ -807,63 +1045,13 @@ function displayCountryMarkers(e) {
   updateCountObjects();
 }
 
-
 /**
- * Crée et affiche des marqueurs pour les pays voisins.
+ * Calcule de nouvelles coordonnées pour un marqueur afin de le positionner à l'intérieur d'une zone spécifiée.
  *
- * @param {Array<string>} neighbors - Les codes des pays voisins à afficher.
- * @param {L.LatLngBounds} [bounds=false] - Les limites géographiques pour ajuster la position des marqueurs.
+ * @param {Array} latlng - Un tableau contenant les coordonnées initiales du marqueur [latitude, longitude].
+ * @param {L.LatLngBounds} bounds - Les limites géographiques au sein desquelles le marqueur doit être positionné.
+ * @return {L.LatLng} Un objet LatLng de Leaflet représentant les nouvelles coordonnées ajustées du marqueur.
  */
-const createMarkersNeighbors = (neighbors, bounds = false) => {
-  if (neighbors[0] === "") { return; }
-
-  const combinedFilter = getFiltersSettings();
-
-  // Supprimer les anciens marqueurs voisins
-  window.neighbors.forEach(neighbor => window.mapMusee.removeLayer(neighbor));
-  window.neighbors = [];
-
-  neighbors.forEach(country_code => {
-      const layerKey = Object.keys(window.countries_layers[0]._layers).find(key => 
-          window.countries_layers[0]._layers[key].feature.properties.ISO_A2_EH === country_code
-      );
-
-      if (!layerKey) { return; }
-
-      const country = window.countries_layers[0]._layers[layerKey].feature.properties;
-      if (!country.LABEL_Y || !country.LABEL_X) { return; }
-
-      let latlng = [country.LABEL_Y, enableAnteMeridian(country.LABEL_X)];
-      if (bounds && !bounds.contains(latlng)) {
-          latlng = calculateNewLatLng(latlng, bounds.pad(-0.95));
-      }
-
-      let objectCount = 0;
-      try {
-          const continentName = country.CONTINENT;
-          const cities = window.sortedData.continents[continentName].notices[country_code].cities;
-          objectCount = Object.values(cities).reduce((count, city) => 
-              count + city.notices.filter(combinedFilter).length, 0);
-      } catch {
-          return;
-      }
-
-      const html = `<div class="neighbor-marker" id="${country_code}">
-                      <img src="/ui/plug-in/integration/carte-instrument-musee/img/boussole.svg" alt=""/>
-                      <div>
-                        <h3><span>${country.NAME_FR}</span> (${country.name_native})</h3>
-                        <p class="marker-count" data-continent="${country.CONTINENT}" data-country_code="${country_code}">${objectCount} Objet(s)</p>
-                      </div>
-                    </div>`;
-      const icon = L.divIcon({ html: html, className: `continent-marker neighbor` });
-      const marker = L.marker(latlng, { icon: icon }).on("click", displayCountryMarkers);
-      
-      window.neighbors.push(marker);
-      window.mapMusee.addLayer(marker);
-  });
-};
-
-// Fonction pour calculer les nouvelles coordonnées du marqueur
 const calculateNewLatLng = (latlng, bounds) => {
   var lat = latlng[0];
   var lng = latlng[1];
@@ -885,6 +1073,7 @@ const calculateNewLatLng = (latlng, bounds) => {
 
   return L.latLng(lat, lng);
 }
+
 /**
  * Crée une popup pour un marqueur avec des informations sur les notices associées.
  *
@@ -900,36 +1089,45 @@ const createMarkerPopup = notices => {
       return container;
   }
 
+  const cityContainer = createCityContainer(notices);
+  container.appendChild(cityContainer);
+
   // Création de la rosace des catégories
   const categories = [...new Set(notices.map(notice => notice["Type d'objet"]))];
   const angleUnit = 360 / categories.length * Math.PI / 180;
   let angle = -90 * Math.PI / 180;
-  const radius = 100;
+  const radius = 120;
+
+  var offsetCenterX = 35
+  var offsetCenterY = 5
 
   categories.forEach(category => {
       const catNotices = notices.filter(notice => notice["Type d'objet"] === category);
       const catInfo = window.object_type.find(obj => obj.label === category);
       const catNamePluriel = catInfo ? catInfo.label_pluriel.replace("Oe", "Œ") : "";
 
-      const posX = categories.length > 1 ? radius * Math.cos(angle) - 35 : 0;
-      const posY = radius / 1.5 * Math.sin(angle);
+      const posX = categories.length > 2 ? radius * Math.cos(angle) - offsetCenterX : 0;
+      const posY = radius / 1.5 * Math.sin(angle) + offsetCenterY;
       angle += angleUnit;
+      
+      var type_config = window.object_type.find(type => { return type.label == category})
 
       const buttonCat = document.createElement("button");
       buttonCat.className = `cat_button ${normalize_string(category).replace("'", "_")}`;
-      buttonCat.style.transform = `translate(${posX}px, ${posY}px)`;
+      buttonCat.setAttribute("style", `background-color: ${type_config.color}; transform: translate(${posX}px, ${posY}px)`)
       buttonCat.title = `Voir une sélection des ${catNamePluriel}`;
 
       buttonCat.onclick = e => createCartel(e, catNotices);
 
       const itemNumber = document.createElement("p");
       itemNumber.textContent = catNotices.length;
+
+      let icon = document.createElement("img")
+      icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee2/${type_config.icon}`);
+      itemNumber.appendChild(icon)
       buttonCat.appendChild(itemNumber);
       container.appendChild(buttonCat);
   });
-
-  const cityContainer = createCityContainer(notices);
-  container.appendChild(cityContainer);
 
   return container;
 };
@@ -942,12 +1140,12 @@ const createMarkerPopup = notices => {
 */
 function createCityContainer(notices) {
   const cityContainer = document.createElement("div");
-  cityContainer.className = "city-center";
-  cityContainer.style.transform = "translate(-54px, -9px)";
+  cityContainer.className = `city-center ${!notices[0].Ville ? "unknown" : "known"}`;
+  cityContainer.style.transform = "translate(-78px, -9px)";
   cityContainer.title = "Voir une sélection des éléments";
 
   const nameElement = document.createElement("p");
-  nameElement.textContent = notices[0].Ville || `${notices[0].Pays} (Sans localisation)`;
+  nameElement.innerHTML = notices[0].Ville ? `<b>${notices[0].Ville}</b>` : `<b>${notices[0].Pays || notices[0].Continent} </b> <br> Sans localisation précise`;
   cityContainer.appendChild(nameElement);
 
   const totalNumber = document.createElement("p");
@@ -960,8 +1158,13 @@ function createCityContainer(notices) {
 }
 
 
-/* CARTELS */
-
+/**
+ * Crée un diaporama de cartels pour afficher des informations sur des objets spécifiques.
+ * Sélectionne aléatoirement des objets et met l'accent sur les objets "incontournables".
+ *
+ * @param {Event} e - L'événement déclencheur.
+ * @param {Array} notices - Un tableau d'objets représentant les notices à afficher.
+ */
 const createCartel = (e, notices) => {
   // Randomize and take max 10 notices primary incontournables
   var item_to_show = 10
@@ -974,7 +1177,7 @@ const createCartel = (e, notices) => {
       rand_notices.map(notice => { incontournables.push(notice)})
   } 
   
-  var parent = $(e.target).parent(".popup-container")[0] || $(e.target).parent().parent(".popup-container")[0] || e
+  var parent = $(e.target).parents(".popup-container")[0]
 
   // Remove existing cartel
   if($("#cartel-container").length){ $("#cartel-container").remove() }
@@ -991,7 +1194,7 @@ const createCartel = (e, notices) => {
       let image_section = document.createElement("div")
       image_section.setAttribute("class", `crop-image ${normalize_string(notice["Type d'objet"]).replace("'", "_")}` )
 
-      var src = `/ui/plug-in/integration/carte-instrument-musee/img/nobg-${normalize_string(notice["Type d'objet"]).replace("'", "_")}.svg`
+      var src = `/ui/plug-in/integration/carte-instrument-musee2/img/nobg-${normalize_string(notice["Type d'objet"]).replace("'", "_")}.svg`
       
       if(notice["URL Photographie"].length){
           let blurry_img = document.createElement("img")
@@ -1026,7 +1229,7 @@ const createCartel = (e, notices) => {
 
       let type_icon = document.createElement("img")
           type_icon.setAttribute("class", "type-icon")
-          type_icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee/img/${normalize_string(notice["Type d'objet"]).replace("'", "_")}.svg`)
+          type_icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee2/img/${normalize_string(notice["Type d'objet"]).replace("'", "_")}.svg`)
           type_icon.setAttribute("alt", notice["Type d'objet"])
           title_section.appendChild(type_icon)
 
@@ -1044,19 +1247,11 @@ const createCartel = (e, notices) => {
       let hierarchy_content = [notice["Instrument niveau 1"], notice["Instrument niveau 2"], notice["Instrument niveau 3"]]
       hierarchy_content.map(term => {
           if (term == "") {return}
-          /* CL 06/11/23 Désactivation du bouton de recherche dans la hiérarchie */
+
           let button = document.createElement("p")
           button.setAttribute("class", "text-hierarchy")
 
-          //let button = document.createElement("button")
-          //button.setAttribute("class", "text-btn")
-          //button.setAttribute("type", "button")
-          //button.setAttribute("data-search", normalize_string(term).replace("'", "_"))
           button.textContent = term
-          //$(button).click(function(){
-          //    document.getElementById("seeker").value = `"${term}"`
-          //    $("#search").click()
-          //})
           hierarchy.appendChild(button)
           
       })
@@ -1068,18 +1263,10 @@ const createCartel = (e, notices) => {
           text_section.appendChild(author)
 
       if (notice["Collection d'origine"]){
-
-          let collection = document.createElement("p")
-          collection.setAttribute("class", "collection")
-          collection.textContent = "Collection d'origine : "
-
-          let button = document.createElement("button")
-          button.setAttribute("class", "text-btn")
-          button.setAttribute("type", "button")
-          button.setAttribute("data-search", normalize_string(notice["Collection d'origine"]).replace("'", "_"))
-          button.textContent = notice["Collection d'origine"]
-          collection.appendChild(button)
-          text_section.appendChild(collection)
+        let ollection_origine = document.createElement("p")
+        ollection_origine.setAttribute("class", "lieu-creation")
+        ollection_origine.textContent = "Collection d'origine : " + notice["Collection d'origine"]
+        text_section.appendChild(ollection_origine)
       }
 
       let lieu_creation = document.createElement("p")
@@ -1100,29 +1287,6 @@ const createCartel = (e, notices) => {
       /* Conteneur des boutons de liens et d'écoute */
       var link_container = document.createElement("div")
       text_section.appendChild(link_container)
-
-      /* Construction de l'url de la recherche par catégorie (tout voir) */
-      let category = window["object_type"].filter(type => { return notice["Type d'objet"] == type.label})
-      if (category.length){
-
-          let facet = `FacetFilter:'{"_201":"${category[0].name_system}"}`
-          let city = notice.Ville
-
-          /* 14/09/2023 la query ne fonctionne plus */
-          //let query_category_link = `https://collectionsdumusee.philharmoniedeparis.fr/search.aspx?SC=MUSEE&QUERY=${city}#/Search/(query:(${facet}',ForceSearch:!t,InitialSearch:!f,Page:0,PageRange:3,QueryString:${city},ResultSize:50,ScenarioCode:MUSEE,ScenarioDisplayMode:display-mosaic,SearchGridFieldsShownOnResultsDTO:!(),SearchLabel:'',SearchTerms:${city},SortField:!n,SortOrder:0,TemplateParams:(Scenario:'',Scope:MUSEE,Size:!n,Source:'',Support:'',UseCompact:!f),UseSpellChecking:!n),sst:4)`
-
-          /* 14/09/2023 test nouvelle query */
-          //let query_category_link = `https://collectionsdumusee.philharmoniedeparis.fr/search.aspx?SC=MUSEE&QUERY=+${category[0].name_system}+${city}`
-
-          /* 02/10/2023 CL Désacivation du bouton dans l'attente d'une query sans bruit */
-          /* let category_search_link = document.createElement("a")
-                  category_search_link.setAttribute("class", "btn btn-default btn-link")
-                  category_search_link.setAttribute("href", query_category_link)
-                  category_search_link.setAttribute("alt", "Voir le résultat de recherche (nouvel onglet)")
-                  category_search_link.setAttribute("target", "_blank")
-                  category_search_link.textContent = "Voir la sélection"
-                  link_container.appendChild(category_search_link) */
-      }
 
       // Construction de l'url de la notice à partir du nom et du numéro de notice (formaté avec leading 0)
       let regex =  /^(.*?) \/ /
@@ -1160,9 +1324,10 @@ const createCartel = (e, notices) => {
   if($("#close-slider").length) { $("#close-slider").toggle() }
 
   $('.single-item').slick({
+      variableWidth: true,
       arrowsPlacement: 'beforeSlides',
-      prevArrow: '<button type="button" class="custom-prev-button widget" id="prevButton"><img src="/ui/plug-in/integration/carte-instrument-musee/img/chevron.svg" alt="Instrument précédente" class="chevron-left" aria-hidden="true"/><span class="sr-only">Entrée précédente</span></button>',
-      nextArrow: '<button type="button" class="custom-next-button widget" id="nextButton"><img src="/ui/plug-in/integration/carte-instrument-musee/img/chevron.svg" alt="Instrument suivante" class="chevron-right" aria-hidden="true"/><span class="sr-only">Entrée suivante</span></button>',
+      prevArrow: '<button type="button" class="custom-prev-button widget" id="prevButton"><img src="/ui/plug-in/integration/carte-instrument-musee2/img/chevron.svg" alt="Instrument précédente" class="chevron-left" aria-hidden="true"/><span class="sr-only">Entrée précédente</span></button>',
+      nextArrow: '<button type="button" class="custom-next-button widget" id="nextButton"><img src="/ui/plug-in/integration/carte-instrument-musee2/img/chevron.svg" alt="Instrument suivante" class="chevron-right" aria-hidden="true"/><span class="sr-only">Entrée suivante</span></button>',
   
   });
 
@@ -1176,6 +1341,10 @@ const createCartel = (e, notices) => {
   };
 }
 
+/**
+ * Crée et ajoute un bouton de fermeture pour le diaporama de cartels.
+ * Le bouton est ajouté uniquement s'il n'existe pas déjà.
+ */
 const createCloseButton = () => {
   if($("#close-slider").length) { return }
 
@@ -1193,6 +1362,13 @@ const createCloseButton = () => {
 
   $("#cartel-container")[0].appendChild(button)
 }
+
+/**
+ * Mélange aléatoirement les éléments d'un tableau.
+ *
+ * @param {Array} array - Le tableau à mélanger.
+ * @return {Array} Le tableau mélangé.
+ */
 const shuffleArray = array => {
   for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -1201,7 +1377,13 @@ const shuffleArray = array => {
   return array
 }
 
-/* Button audio creation */
+/**
+ * Crée un bouton audio avec un lecteur pour jouer un extrait audio.
+ *
+ * @param {string} audioSource - L'URL de la source audio.
+ * @param {string} text - Le texte à afficher sur le bouton.
+ * @param {HTMLElement} player_element - L'élément DOM dans lequel le bouton et le lecteur seront insérés.
+ */
 const createAudioButton = (audioSource, text, player_element) => {
   let idPlayer = $(player_element).attr("id")
   let container = document.createElement('div')
@@ -1227,10 +1409,13 @@ const createAudioButton = (audioSource, text, player_element) => {
   audioPlay(button)
 }
 
-/* Player audio control and features */
-/* To launch : call  audioPlay(idPlayer) */
+/**
+ * Contrôle la lecture audio. Lie les événements de clic sur le bouton pour jouer ou mettre en pause l'audio.
+ *
+ * @param {HTMLElement} playBtn - Le bouton qui contrôle la lecture/pause de l'audio.
+ */
 const audioPlay = (playBtn) => {
-  $(playBtn).click(function() {
+  $(playBtn).on("click", function() {
       var player = $(this).next('audio')[0]
       if (player.paused === false) {
 
@@ -1259,7 +1444,12 @@ const audioPlay = (playBtn) => {
 
 }
 
-/* Compute play time into css gradient to make a progress bar */
+/**
+ * Affiche une barre de progression sur le bouton audio en fonction du temps de lecture.
+ *
+ * @param {HTMLElement} elt - L'élément bouton sur lequel la barre de progression sera affichée.
+ * @param {HTMLAudioElement} player - L'élément audio pour lequel la progression est calculée.
+ */
 const progressBar = (elt, player) => {
   var colors = ["rgba(196,239,255,1)", "rgba(179,214,253,1)"]
   var currentTime = player.currentTime
@@ -1269,9 +1459,12 @@ const progressBar = (elt, player) => {
 
 }
 
+/**
+ * Gère les interactions avec les filtres de la carte, y compris les événements de clic et de changement.
+ * Inclut la gestion des filtres pour les enregistrements, les types d'objets et la localisation.
+ */
 function handleFilters() {
-
-  $("#with-records").click(e => {
+  $("#with-records").on("click", e => {
     applyFilters()
   });
 
@@ -1292,11 +1485,8 @@ function handleFilters() {
         Object.keys(group).forEach(key => window.mapMusee.removeLayer(group[key]));
       });
 
-      // Retirer tous les marqueurs voisins
-      window.neighbors.forEach(neighbor => window.mapMusee.removeLayer(neighbor));
-
       // Déselectionner pays
-      $('path').css({ opacity: 0, fillOpacity: 0 }).removeClass("selected");
+      $('path').removeClass("selected");
     };
 
     window.continents_popups.forEach(continentpopup => {
@@ -1316,12 +1506,18 @@ function handleFilters() {
         }
       });
     }
+    updateSelectedZone()
   });
 
 
   searchBox()
 
 }
+
+/**
+ * Applique les filtres sélectionnés et met à jour les clusters de marqueurs et les popups.
+ * Gère l'affichage des clusters pour les continents et les pays, ainsi que les marqueurs inconnus.
+ */
 function applyFilters(){
 
   var combinedFilter = getFiltersSettings()
@@ -1382,37 +1578,17 @@ Object.keys(window.groups.continentGroup).forEach(continent => {
     }
   });
 
-  // Update Neighbors count
-  window.neighbors.map(neighbor => {
-    // Récupération de la valeur de la balise marker-count et mise à jour
-    var htmlString = neighbor.options.icon.options.html
-    var htmlDoc = new DOMParser().parseFromString(htmlString, "text/html")
-    var popupCountElement = htmlDoc.querySelector('.marker-count') 
-
-    var continent = popupCountElement.getAttribute("data-continent")
-    var country_code = popupCountElement.getAttribute("data-country_code")
-
-    var objectCount = 0
-    var cities = window.sortedData.continents[continent].notices[country_code].cities
-    Object.keys(cities).map(city => {
-      objectCount += cities[city].notices.filter(combinedFilter).length
-    })
-
-    popupCountElement.textContent = popupCountElement.textContent.replace(/\d{1,5}/, objectCount)
-    var updatedHtml = new XMLSerializer().serializeToString(htmlDoc)
-
-    var newIcon = L.divIcon({
-      html: updatedHtml,
-      className: `continent-marker neighbor`
-    })
-    neighbor.setIcon(newIcon);
-
-  })
   // mise à jour des compteurs
   updateCountObjects()
 }
 
-
+/**
+ * Définit le statut d'affichage d'un marqueur inconnu.
+ *
+ * @param {Object} marker - Le marqueur à mettre à jour.
+ * @param {string} country_code - Le code ISO du pays associé au marqueur.
+ * @param {boolean} isDisplayed - Indique si le marqueur doit être affiché.
+ */
 function setUnknownMarkerDisplayStatus(marker, country_code, isDisplayed) {
   let unknownID = window.unknown_markers.continents[country_code];
   if (unknownID && unknownID.hasOwnProperty('_leaflet_id') && unknownID._leaflet_id === marker._leaflet_id) {
@@ -1420,7 +1596,12 @@ function setUnknownMarkerDisplayStatus(marker, country_code, isDisplayed) {
   }
 }
 
-
+/**
+ * Met à jour le contenu de la popup d'un marqueur.
+ *
+ * @param {Object} marker - Le marqueur dont la popup doit être mise à jour.
+ * @param {Array} filteredNotices - Les notices filtrées à afficher dans la popup.
+ */
 function updateMarkerPopup(marker, filteredNotices) {
   var newPopupContent = createMarkerPopup(filteredNotices)
   if (filteredNotices.length == 0){
@@ -1435,6 +1616,12 @@ function updateMarkerPopup(marker, filteredNotices) {
   }
 }
 
+/**
+ * Met à jour le contenu de la popup d'un marqueur.
+ *
+ * @param {Object} marker - Le marqueur dont la popup doit être mise à jour.
+ * @param {Array} filteredNotices - Les notices filtrées à afficher dans la popup.
+ */
 function updateMarkerContent(marker, count, type = false, className = false) {
 
   // Récupération de la valeur de la balise marker-count et mise à jour
@@ -1464,6 +1651,14 @@ function updateMarkerContent(marker, count, type = false, className = false) {
   marker.setIcon(newIcon);
 }
 
+/**
+ * Met à jour le contenu d'un marqueur, y compris le compteur et la classe CSS.
+ *
+ * @param {Object} marker - Le marqueur à mettre à jour.
+ * @param {number} count - Le nombre d'éléments à afficher sur le marqueur.
+ * @param {string} [type=false] - Le type de marqueur (continent, ville, etc.).
+ * @param {string} [className=false] - La classe CSS à appliquer au marqueur.
+ */
 function updateCountObjects(){
   var selectedCountry = document.querySelector("#loc-select [selected='selected']").value
   var isRecordChecked = document.getElementById("with-records").checked;
@@ -1474,7 +1669,7 @@ function updateCountObjects(){
   }
 
   function typeFilterFunction(notice) {
-      return typeFilter !== "all" ? normalize_string(notice["Type d'objet"]) === typeFilter : true;
+      return typeFilter !== "all" ? normalize_string(notice["Type d'objet"]).replace("'", "_") === typeFilter : true;
   }
 
   function combinedFilter(notice) {
@@ -1508,7 +1703,7 @@ function updateCountObjects(){
       }
   });
 
-selectize.refreshOptions(false);
+  selectize.refreshOptions(false);
   var typesElements = document.querySelectorAll('input[name="types"]')
   Array.from(typesElements).map(typeElement => {
     if (typeElement.value == "all") { return }
@@ -1559,6 +1754,12 @@ selectize.refreshOptions(false);
 
 }
 
+/**
+ * Crée et retourne une fonction de filtrage combiné en fonction des filtres sélectionnés.
+ * Le filtrage est basé sur la présence d'un enregistrement et le type d'objet.
+ *
+ * @returns {Function} Une fonction de filtrage qui accepte un objet notice et retourne un booléen.
+ */
 function getFiltersSettings(){
   var recordFilter = document.getElementById("with-records").checked
   var typeFilter = document.querySelector('input[name="types"]:checked').value || "all"
@@ -1568,7 +1769,7 @@ function getFiltersSettings(){
   }
 
   function typeFilterFunction(notice) {
-      return typeFilter !== "all" ? normalize_string(notice["Type d'objet"]).replace("'", "_") === typeFilter : true;
+      return typeFilter !== "all" ? normalize_string(notice["Type d'objet"]).replace("'", "_") === normalize_string(typeFilter).replace("'", "_") : true;
   }
 
   function combinedFilter(notice) {
@@ -1577,18 +1778,33 @@ function getFiltersSettings(){
   return combinedFilter
 }
 
+/**
+ * Affiche le nombre total d'objets dans tous les continents.
+ *
+ * @param {Object} data - Les données contenant les informations des continents.
+ */
 const displayResultNumber = data => {
   var count = 0
   Object.keys(data.continents).map(continent => { count += data.continents[continent].count })
   document.getElementById("nb-items").textContent = `${count} Objet(s)`
 }
 
+/**
+ * Remplit le champ de sélection de localisation avec les options générées.
+ *
+ * @param {Object} data - Les données utilisées pour générer les options de localisation.
+ */
 const populateLocalisation = data => {
   var array_continent = createSelectizeDOM(data)
   window.selectizeItem[0].selectize.clearOptions();
   window.selectizeItem[0].selectize.addOption(array_continent);
 }
 
+/**
+ * Initialise et configure le champ de sélection de localisation avec les options de localisation générées.
+ *
+ * @param {Object} data - Les données utilisées pour créer les options de localisation.
+ */
 const createOptionsLocalisation = data => {
   var array_continent = createSelectizeDOM(data)
   window.selectizeItem = $("#loc-select").selectize({
@@ -1604,6 +1820,13 @@ const createOptionsLocalisation = data => {
       },
   });
 }
+
+/**
+ * Génère une structure de données pour les options de localisation utilisées par Selectize.
+ *
+ * @param {Object} data - Les données contenant les informations des continents et pays.
+ * @returns {Array} Un tableau d'options formatées pour Selectize.
+ */
 const createSelectizeDOM = data => {
   var array_continent = []
   Object.keys(data.continents).map(continent => {
@@ -1626,8 +1849,8 @@ const createSelectizeDOM = data => {
           var detail_country = window.topojson_data.filter(item => { return item.ISO_A2_EH == country_code })[0]
           let option = {
               "id" : country_code == "" ? `${continent}-99` : country_code,
-              "name_fr" : detail_country.NAME_FR,
-              "name_native" : detail_country.name_native,
+              "name_fr" : detail_country ? detail_country.NAME_FR : "",
+              "name_native" : detail_country ? detail_country.name_native : "",
               "count" : data.continents[continent].notices[country_code].count,
           }
           array_options.push(option)
@@ -1646,6 +1869,13 @@ const createSelectizeDOM = data => {
   return array_continent
 }
 
+/**
+ * Formate une option pour l'affichage dans le menu déroulant de Selectize.
+ *
+ * @param {Object} item - L'objet représentant une option de localisation.
+ * @param {Function} escape - Fonction d'échappement de caractères spéciaux.
+ * @returns {string} Le HTML formaté pour une option Selectize.
+ */
 const selectizeOptionDOM = (item, escape) => {
 
   if (item.name_fr[0] == "0"){
@@ -1666,11 +1896,17 @@ const selectizeOptionDOM = (item, escape) => {
   return html
 }
 
+/**
+ * Remplit les options de types d'objets dans l'interface utilisateur en fonction des données disponibles.
+ *
+ * @param {Object} data - Les données contenant les informations sur les types d'objets.
+ */
 const populateObjectTypes = data => {
   var types = window["object_type"]
   var parent = document.getElementById("types-filter")
 
   $(`#types-filter .radio`).remove();
+  types.sort((a, b) => (a.order > b.order) ? 1 : -1)
 
   types.map(type => {
       if (type.name == "all") { 
@@ -1679,7 +1915,7 @@ const populateObjectTypes = data => {
 
           let label = document.createElement("label")
           label.setAttribute("for", "all-types")
-          label.textContent = "Toutes les catégories"
+          label.textContent = "Tous les types d'objets"
           radio_container.appendChild(label)
 
           let input = document.createElement("input")
@@ -1703,7 +1939,7 @@ const populateObjectTypes = data => {
       
       let icon = document.createElement("img")
       icon.setAttribute("class", "type-icon")
-      icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee/${type.icon}`) 
+      icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee2/${type.icon}`) 
       
       icon.setAttribute("alt", "")
       radio_container.appendChild(icon)
@@ -1726,7 +1962,7 @@ const populateObjectTypes = data => {
       if(is_disables) {
           input.disabled = true
           $(container).addClass("disabled")
-          icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee/${type.disabled_icon}`)
+          icon.setAttribute("src", `/ui/plug-in/integration/carte-instrument-musee2/${type.disabled_icon}`)
       }
       else {
           input.disabled = false
@@ -1762,7 +1998,14 @@ const populateObjectTypes = data => {
   })
 }
 
+/**
+ * Gère les changements de mode plein écran pour la carte, en ajustant l'affichage des filtres.
+ */
 function onFullScreenChange() {
+    // Refermer les filtres lors du passage plein écran
+    $("#mapFilter, #open-close-filter, #mapMusee").removeClass("open")
+    $("#open-close-filter img").attr("src", "/ui/plug-in/integration/carte-instrument-musee2/img/filters.svg")
+
     // Déplacement des éléments du DOM pour afficher les filtres avec l'option plein écran
     var mapElement = document.getElementById('mapMusee');
     var filterElement = document.getElementById('mapFilter');
@@ -1779,11 +2022,17 @@ function onFullScreenChange() {
         parentContainer.insertBefore(filterElement, mapElement)
         parentContainer.insertBefore(buttonElement, mapElement)
     }
+
     $(filterElement).toggleClass("fullscreen-filters")
     $(buttonElement).toggleClass("fullscreen-filters")
 }
 
+/**
+ * Initialise la fonctionnalité de recherche dans l'interface utilisateur.
+ */
 const searchBox = () => {
+
+  $('#search').off();
 
   /* SEEKER FUNCTION */
   if (!RegExp.escape) {
@@ -1793,19 +2042,21 @@ const searchBox = () => {
   }
 
   $('.search-bar').submit(function(e) { e.preventDefault() })
-  $('#search').click(function(e) { filterSearch() })
+  $('#search').on("click", function(e) { filterSearch() })
 }
 
+/**
+ * Applique les filtres de recherche sur les données et met à jour la carte en conséquence.
+ * Gère la recherche par mots-clés, les filtres de type et d'enregistrement.
+ */
+/* 
 const filterSearch = () => {  
-
-  
   // Reset location
   selectizeItem[0].selectize.setValue("empty")
   var filtersSettings = getFiltersSettings()
 
-  const data = window.initial_data.raw_data
+  const data = window.initial_data[0].raw_data
   var searchTerms = document.getElementById("seeker").value.replace(/\s$/gmi, "")
-
   // Reset search for button reset
   if (searchTerms == "resetMap"){
       filteredSortedData = sortedData
@@ -1826,7 +2077,6 @@ const filterSearch = () => {
       searchTerms.toLowerCase().split(' ').map(q => queryReg.push(`(?=.*${q})`))
   }
 
-  /* Data filter method */
   var filtered = []
 
   const filterIt = (arr, query) => {
@@ -1840,7 +2090,6 @@ const filterSearch = () => {
   queryReg.map(query => { 
       filtered.push(filterIt(data, query)) 
   })
-
   // Prise en charge de la recherche avec mots multiples dans tous les champs de data
   if (queryReg.length > 1) {
       const findDuplicates = arr => arr.filter((item, index) => arr.indexOf(item) !== index)
@@ -1848,16 +2097,11 @@ const filterSearch = () => {
   } 
 
   var filterQuery = { "filtered": filtered.flat(), "query": queryReg }
-
   if (window.mapMusee == undefined) { return }
 
-  window.mapMusee.removeControl(window.fullScreenControl);
-  window.mapMusee.off()
-  window.mapMusee.remove()
-  window.mapMusee = undefined
+  destructMap()
 
   var dataObjectFiltered = createDataObject(filterQuery.filtered, window.object_type_data.continents_infos, window.data_countries)
-  
   var newData = [ 
     dataObjectFiltered,
     window.object_type_data,
@@ -1865,19 +2109,56 @@ const filterSearch = () => {
     window.output_topo_data
   ]
   
+  console.log("call generall in filterit")
   generalMapMusee(newData, window.initial_data)
 
   // Ouvrir et fermer le menu des filtres
-  $("#open-close-filter").click(e => {
-    $("#mapFilter, #open-close-filter, #mapMusee").toggleClass("open")
-    onkeyup = e => {
-      if ((e.keyCode == 27) && $("#mapFilter, #open-close-filter, #mapMusee").hasClass("open")){
-        $("#mapFilter, #open-close-filter").removeClass("open")
-      }
-    };
-  })
+  openCloseFilters()
 
-}
+} */
+const filterSearch = () => {
+  // Reset location
+  selectizeItem[0].selectize.setValue("empty");
+  const filtersSettings = getFiltersSettings();
+  const data = window.initial_data[0].raw_data;
+  const searchTerms = document.getElementById("seeker").value.trim();
+
+  // Reset search for button reset
+  if (searchTerms === "resetMap") {
+    filteredSortedData = sortedData;
+    document.getElementById("all-types").checked = true;
+    document.getElementById("with-records").checked = false;
+    document.getElementById("seeker").value = "";
+  }
+
+  // Traitement de la recherche avec prise en charge de la recherche exacte ("lorem")
+  const queryReg = searchTerms.includes('"')
+    ? searchTerms.match(/\"(.*?)\"/gm).map(q => q.replace(/\"/g, ''))
+    : searchTerms.toLowerCase().split(' ').map(q => `(?=.*${q})`);
+
+  // Data filter method
+  const filterIt = (arr, query) => {
+    return arr.filter(obj => Object.keys(obj).some(key => key !== 'Enregistrement' && new RegExp(query, "i").test(obj[key])));
+  };
+
+  const filtered = queryReg.map(query => filterIt(data, query)).flat();
+
+  // Prise en charge de la recherche avec mots multiples dans tous les champs de data
+  const findDuplicates = arr => arr.filter((item, index) => arr.indexOf(item) !== index);
+  const uniqueFiltered = queryReg.length > 1 ? findDuplicates(filtered).filter(notice => filtersSettings(notice)) : filtered;
+
+  const filterQuery = { "filtered": uniqueFiltered, "query": queryReg };
+  if (!window.mapMusee) return;
+
+  destructMap();
+
+  const dataObjectFiltered = createDataObject(filterQuery.filtered, window.object_type_data.continents_infos, window.data_countries);
+  const newData = [dataObjectFiltered, window.object_type_data, window.data_countries, window.output_topo_data];
+  generalMapMusee(newData, window.initial_data);
+
+  // Ouvrir et fermer le menu des filtres
+  openCloseFilters();
+};
 
 /**
  * Fonction de création du bouton reset de la carte
@@ -1894,15 +2175,22 @@ function createResetButton(map) {
 
   let img = new DOMParser().parseFromString(
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 328.32 335.24">
-          <path d="m272.68,41.69c.7-1.2,1.18-2.62,2.13-3.58,8.06-8.17,16.25-16.22,24.3-24.4,5.24-5.33,11.3-7.22,18.38-4.58,6.45,2.41,9.87,8.12,9.88,16.08.03,28.45.04,56.89,0,85.34-.02,10.53-6.48,17.03-17.06,17.05-28.33.07-56.65.05-84.98,0-8.13-.01-13.87-3.55-16.35-10.11-2.69-7.13-.63-13.12,4.68-18.33,8.01-7.85,15.92-15.82,24.7-24.56-8.3-5.21-15.85-10.72-24.06-14.95-35.34-18.23-70.78-15.72-104.47,3.32-42.34,23.92-62.85,61.49-61.73,110.1,1.25,54.33,43.92,102.97,97.48,112.19,59.06,10.17,113.16-20.46,134.68-76.25,4.25-11.02,11.61-14.93,23.31-12.42,4.14.89,8.32,1.63,12.44,2.59,9.48,2.2,14.53,10.57,11.35,19.58-22.19,62.8-65.85,101.96-131.34,113.81-84.9,15.36-166.14-36.91-189.75-119.88C-19.69,121.46,37.59,25.09,129.83,4.28c51.97-11.73,97.68,1,138.54,33.99.87.7,1.74,1.42,2.62,2.11.18.14.44.2.66.29.34.34.69.69,1.03,1.03Z"/>
+          <path class="reset-icon" d="m272.68,41.69c.7-1.2,1.18-2.62,2.13-3.58,8.06-8.17,16.25-16.22,24.3-24.4,5.24-5.33,11.3-7.22,18.38-4.58,6.45,2.41,9.87,8.12,9.88,16.08.03,28.45.04,56.89,0,85.34-.02,10.53-6.48,17.03-17.06,17.05-28.33.07-56.65.05-84.98,0-8.13-.01-13.87-3.55-16.35-10.11-2.69-7.13-.63-13.12,4.68-18.33,8.01-7.85,15.92-15.82,24.7-24.56-8.3-5.21-15.85-10.72-24.06-14.95-35.34-18.23-70.78-15.72-104.47,3.32-42.34,23.92-62.85,61.49-61.73,110.1,1.25,54.33,43.92,102.97,97.48,112.19,59.06,10.17,113.16-20.46,134.68-76.25,4.25-11.02,11.61-14.93,23.31-12.42,4.14.89,8.32,1.63,12.44,2.59,9.48,2.2,14.53,10.57,11.35,19.58-22.19,62.8-65.85,101.96-131.34,113.81-84.9,15.36-166.14-36.91-189.75-119.88C-19.69,121.46,37.59,25.09,129.83,4.28c51.97-11.73,97.68,1,138.54,33.99.87.7,1.74,1.42,2.62,2.11.18.14.44.2.66.29.34.34.69.69,1.03,1.03Z"/>
       </svg>`,
       'application/xml');
 
   resetButton.appendChild(resetButton.ownerDocument.importNode(img.documentElement, true))
 
   $(resetButton).on("click", e => {
-      document.getElementById("seeker").value = "resetMap"
-      $("#search").click()        
+      $(".loader").show()
+      document.getElementById("seeker").value = ""
+
+      destructMap()
+      generalMapMusee(window.initial_data)
+      openCloseFilters()
+
+      $(".loader").hide()
+      
   })
 
   // Ajoutez le bouton à la carte
@@ -1913,3 +2201,125 @@ function createResetButton(map) {
   resetControl.addTo(map);
 
 } 
+
+/**  
+ * Fonction de destruction de la carte
+ */
+function destructMap() {
+  window.mapMusee.removeControl(window.fullScreenControl);
+  window.mapMusee.off()
+  window.mapMusee.remove()
+  window.mapMusee = undefined
+}
+
+/**
+ * Fonction de création des légendes de la carte
+ * @param {Object}map - Variable contenant l'objet carte
+ */
+function createLegend(map) {
+
+
+
+  // Création d'une div contenant la zone sélectionnée
+  var legendCartel = document.createElement("div")
+  legendCartel.id= "legend-cartel"
+  legendCartel.setAttribute("class", "leaflet-bar leaflet-control")
+
+  let selectedZoneContainer = document.createElement("p")
+  selectedZoneContainer.textContent = "Zone sélectionnée : "
+  let selectedZone = document.createElement("b")
+  selectedZone.textContent = "Monde"
+
+  selectedZoneContainer.appendChild(selectedZone)
+
+  legendCartel.appendChild(selectedZoneContainer)
+
+  
+  // Ajoutez la zone sélectionnée à la carte
+  var zoneContainer = L.control({ position: 'topleft' });
+  zoneContainer.onAdd = function() {
+      return legendCartel;
+  };
+  zoneContainer.addTo(map);
+
+
+  // Création des légendes
+  $("#legend-container").remove()
+  
+  let legendItemContainer = document.createElement("div")
+  legendItemContainer.setAttribute("class", "legend")
+  legendItemContainer.setAttribute("id", "legend-container")
+
+  let legendKnown = document.createElement("div")
+  let iconKnown = document.createElement("p")
+  iconKnown.setAttribute("class", "country-marker marker-count")
+  iconKnown.textContent = "X"
+  legendKnown.appendChild(iconKnown)
+
+  let knownLabel = document.createElement("p")
+  knownLabel.textContent = "Objets avec localisation précise"
+  legendKnown.appendChild(knownLabel)
+
+  let legendUnknown = document.createElement("div")
+  let iconUnknown = document.createElement("p")
+  iconUnknown.setAttribute("class", "country-marker marker-count unknown")
+  iconUnknown.textContent = "X"
+  legendUnknown.appendChild(iconUnknown)
+
+  let unknownLabel = document.createElement("p")
+  unknownLabel.setAttribute("class", "label-legend")
+  unknownLabel.textContent = "Objets sans localisation précise"
+  legendUnknown.appendChild(unknownLabel)
+
+
+  legendItemContainer.appendChild(legendKnown)
+  legendItemContainer.appendChild(legendUnknown)
+
+  document.getElementById("mapElementContainer").appendChild(legendItemContainer)
+} 
+
+/**
+ * Fonction de mise à jour de la zone sélectionnée
+ */
+function updateSelectedZone(){
+  let selectionValue =  selectizeItem[0].selectize.getValue();
+  let selectedZone = selectionValue == "empty" ? "Monde" : selectizeItem[0].selectize.$input[0].innerText.replace("0", "").replace(/\r?\n/gm, "");
+  document.querySelector("#legend-cartel b").textContent = selectedZone
+}
+
+/**
+ * Gère l'ouverture et la fermeture du menu des filtres sur la carte.
+ * Bascule l'icône du bouton et les fonctionnalités de navigation de la carte en fonction de l'état du menu.
+ * Désactive les interactions de la carte (dragging, touchZoom, etc.) lorsque les filtres sont ouverts en mode plein écran.
+ */
+function openCloseFilters(){
+
+  $("#open-close-filter").on("click", e => {
+    $("#mapFilter, #open-close-filter, #mapMusee").toggleClass("open")
+    if($("#open-close-filter").hasClass("open")){
+      $("#open-close-filter img").attr("src", "/ui/plug-in/integration/carte-instrument-musee2/img/close.svg")
+
+        if(!$("#open-close-filter").hasClass("fullscreen-filters")){ return }
+        window.mapMusee.dragging.disable();
+        window.mapMusee.touchZoom.disable();
+        window.mapMusee.doubleClickZoom.disable();
+        window.mapMusee.scrollWheelZoom.disable();
+
+    }
+    else{
+      $("#open-close-filter img").attr("src", "/ui/plug-in/integration/carte-instrument-musee2/img/filters.svg")
+
+      if(!$("#open-close-filter").hasClass("fullscreen-filters")){ return }
+      window.mapMusee.dragging.enable();
+      window.mapMusee.touchZoom.enable();
+      window.mapMusee.doubleClickZoom.enable();
+      window.mapMusee.scrollWheelZoom.enable();
+
+    }
+    onkeyup = e => {
+      if ((e.keyCode == 27) && $("#mapFilter, #open-close-filter, #mapMusee").hasClass("open")){
+        $("#mapFilter, #open-close-filter").removeClass("open")
+      }
+    };
+  })
+}
