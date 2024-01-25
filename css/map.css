@@ -9,6 +9,7 @@
     clip: rect(0, 0, 0, 0);
     border: 0;
 }
+<<<<<<< HEAD
 /* Font */
 h1,h2,h3,h4{
     font-family: "Philharmonique";
@@ -24,6 +25,8 @@ body{
     box-sizing: border-box;
 }
 
+=======
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 /* ////////// CONTROLS ////////// */
 .leaflet-control-layers .leaflet-control-layers-toggle{
     display: none;
@@ -229,6 +232,10 @@ body #portal #mapFilter h2{
     padding: 0;
     font-size: 1.3em;
 }
+body #portal #mapFilter h2{
+    padding: 0;
+    font-size: 1.3em;
+}
 /* Loader */
 .loader {
     background: url(/ui/plug-in/integration/carte-instrument-musee/img/loader.gif), #fff;
@@ -245,7 +252,11 @@ body #portal #mapFilter h2{
     opacity: 0.8;
 }
 /* Map Container */
+<<<<<<< HEAD
 #mapMuseeContainer2 > div{
+=======
+#mapMuseeContainer > div{
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
     position: relative;
     width: 100%;
 
@@ -266,12 +277,19 @@ body #portal #mapFilter h2{
     left: -300px;
     transition: 0.2s ease-in-out all;
     opacity: 0;
+<<<<<<< HEAD
     height: 80vh;
     box-sizing: border-box;
 } 
 #mapFilter.fullscreen-filters{
     max-height: unset;
     bottom: 0;
+=======
+} 
+#mapFilter.fullscreen-filters{
+    max-height: unset;
+    bottom: 8vh;
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
     border-radius: 0 16px 16px 0;
 } 
 
@@ -293,6 +311,7 @@ body #portal #mapFilter h2{
     display: none;
 }
 #mapFilter.open{
+<<<<<<< HEAD
     left: 0px;
     transition: 0.2s ease-in-out all;
     width: 300px;
@@ -307,6 +326,25 @@ body #portal #mapFilter h2{
     left: 0px;
     bottom: 20px;
     transition: 0.2s ease-in-out left;
+=======
+    left: -10px;
+    transition: 0.2s ease-in-out all;
+    width: 290px;
+    opacity: 1;
+}
+#open-close-filter.open{
+    left: 280px;
+    bottom: 20px;
+    transition: 0.2s ease-in-out left;
+}
+
+#open-close-filter.open .img-open{
+    display: block;
+}
+
+#open-close-filter.open .img-close{
+    display: none;
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 }
 #open-close-filter.fullscreen-filters.open{
     left: 300px;
@@ -508,11 +546,15 @@ body #portal #mapFilter h2{
     width: 35px !important;
     height: 35px !important;
 }
+<<<<<<< HEAD
 #mapMusee .city-center.unknown{
     color: #001B3B;
     background-color: rgba(244,131,129,0.8);
     border: 2px solid #BD154D;
 }
+=======
+
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 #mapMusee .city-container .city-marker.unknown p{
     color: #001B3B;
 }
@@ -963,11 +1005,14 @@ body #portal #mapFilter h2{
 .toggle {
   cursor: pointer;
   display: inline-block;
+<<<<<<< HEAD
   display: flex;
   flex-wrap: nowrap;
   justify-content: space-between;
   align-items: center;
   width: 100%;
+=======
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 }
 
 .toggle-switch {
@@ -979,7 +1024,10 @@ body #portal #mapFilter h2{
   position: relative;
   vertical-align: middle;
   transition: background 0.25s;
+<<<<<<< HEAD
   top: 4px;
+=======
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 }
 .toggle-switch:before, .toggle-switch:after {
   content: "";
@@ -1016,7 +1064,11 @@ body #portal #mapFilter h2{
   margin-left: 5px;
   position: relative;
   top: 2px;
+<<<<<<< HEAD
   /* font-weight: 400; */
+=======
+  font-weight: 400;
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 }
 
 /* ////////// RESPONSIVE ////////// */
@@ -1033,4 +1085,8 @@ body #portal #mapFilter h2{
     #mapFilter.open {
         left: 0px;
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e

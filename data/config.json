@@ -3,7 +3,11 @@
         { 
             "name": "Instrument_de_musique",
             "layer": "marker-cluster-instru",
+<<<<<<< HEAD
             "color": "#EB8667",
+=======
+            "color": "#DB5A6D",
+>>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
             "icon": "img/instrument_de_musique.svg",
             "disabled_icon": "img/nobg-instrument_de_musique.svg",
             "type": "instrument_de_musique",
