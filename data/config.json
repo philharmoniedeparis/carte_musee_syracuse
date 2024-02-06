@@ -3,11 +3,7 @@
         { 
             "name": "Instrument_de_musique",
             "layer": "marker-cluster-instru",
-<<<<<<< HEAD
             "color": "#EB8667",
-=======
-            "color": "#DB5A6D",
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
             "icon": "img/instrument_de_musique.svg",
             "disabled_icon": "img/nobg-instrument_de_musique.svg",
             "type": "instrument_de_musique",
@@ -116,6 +112,6 @@
         "Amérique du Nord" : { "norm_name":"amerique_du_nord", "name_en":"North America", "latlng":[35, 260],         "zoom_level":3    },
         "Amérique du Sud" :  { "norm_name":"amerique_du_sud",  "name_en":"South America", "latlng":[-10, 305],        "zoom_level":3    },
         "Océanie" :          { "norm_name":"oceanie",          "name_en":"Oceania",       "latlng":[-30, 150],        "zoom_level":4    },
-        "unknown" :          { "norm_name":"unknown",          "name_en":"unknown",       "latlng":[-180 , -180],     "zoom_level":4    }
+        "unknown" :          { "norm_name":"unknown",          "name_en":"unknown",       "latlng":[50 , 50],     "zoom_level":3    }
     }
 }

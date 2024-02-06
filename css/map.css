@@ -9,7 +9,6 @@
     clip: rect(0, 0, 0, 0);
     border: 0;
 }
-<<<<<<< HEAD
 /* Font */
 h1,h2,h3,h4{
     font-family: "Philharmonique";
@@ -25,8 +24,6 @@ body{
     box-sizing: border-box;
 }
 
-=======
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 /* ////////// CONTROLS ////////// */
 .leaflet-control-layers .leaflet-control-layers-toggle{
     display: none;
@@ -232,10 +229,6 @@ body #portal #mapFilter h2{
     padding: 0;
     font-size: 1.3em;
 }
-body #portal #mapFilter h2{
-    padding: 0;
-    font-size: 1.3em;
-}
 /* Loader */
 .loader {
     background: url(/ui/plug-in/integration/carte-instrument-musee/img/loader.gif), #fff;
@@ -252,11 +245,7 @@ body #portal #mapFilter h2{
     opacity: 0.8;
 }
 /* Map Container */
-<<<<<<< HEAD
 #mapMuseeContainer2 > div{
-=======
-#mapMuseeContainer > div{
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
     position: relative;
     width: 100%;
 
@@ -277,19 +266,12 @@ body #portal #mapFilter h2{
     left: -300px;
     transition: 0.2s ease-in-out all;
     opacity: 0;
-<<<<<<< HEAD
     height: 80vh;
     box-sizing: border-box;
 } 
 #mapFilter.fullscreen-filters{
     max-height: unset;
     bottom: 0;
-=======
-} 
-#mapFilter.fullscreen-filters{
-    max-height: unset;
-    bottom: 8vh;
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
     border-radius: 0 16px 16px 0;
 } 
 
@@ -311,7 +293,6 @@ body #portal #mapFilter h2{
     display: none;
 }
 #mapFilter.open{
-<<<<<<< HEAD
     left: 0px;
     transition: 0.2s ease-in-out all;
     width: 300px;
@@ -326,25 +307,6 @@ body #portal #mapFilter h2{
     left: 0px;
     bottom: 20px;
     transition: 0.2s ease-in-out left;
-=======
-    left: -10px;
-    transition: 0.2s ease-in-out all;
-    width: 290px;
-    opacity: 1;
-}
-#open-close-filter.open{
-    left: 280px;
-    bottom: 20px;
-    transition: 0.2s ease-in-out left;
-}
-
-#open-close-filter.open .img-open{
-    display: block;
-}
-
-#open-close-filter.open .img-close{
-    display: none;
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 }
 #open-close-filter.fullscreen-filters.open{
     left: 300px;
@@ -367,6 +329,10 @@ body #portal #mapFilter h2{
     transition: all 0.2s ease-in-out;
     z-index: 10000 !important;
 }
+
+#mapMusee.open .leaflet-top.leaflet-left.fullscreen-filters{
+    transform: unset;   
+}
 #open-close-filter img{
     width: 20px;
     margin: auto;
@@ -381,13 +347,64 @@ body #portal #mapFilter h2{
 #mapMusee #mapFilter{
     overflow: auto;
 }
-/* Reset Button */
-#reset-button{
+
+/* Map Controls */
+.leaflet-bottom.leaflet-left{
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    position: absolute;
+    top: calc(100% + 15px);
+    left: 0;
+}
+.leaflet-bottom.leaflet-left.fullscreen-filters{
+    top: calc(100% - 65px);
+}
+.leaflet-control-zoom{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    height: auto;
+    margin-bottom: 0 !important;
+    height: 34px;
+    border: 2px solid rgba(0,0,0,0.2);
+    overflow: hidden;
+}
+.leaflet-bar a, .leaflet-control-layers-toggle{
     width: 34px;
     height: 34px;
+}
+.leaflet-bar a {
+    position: relative;
+}
+.leaflet-bar a span{
+    position: absolute;
+    top: 48%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.leaflet-control-zoom-fullscreen.fullscreen-icon{
+    background-position: 50% -13%;
+}
+#mapElementContainer .legend{
+    margin-top: 3.2em !important;
+}
+
+/* Reset Button */
+#reset-button{
+    width: fit-content;
+    height: 34px;
     padding: 7px;
-    margin-top: 5px;
     background-color: #fff;
+    border: 2px solid rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    
+}
+#reset-button svg{
+    transform: rotateY(180deg);
+    height: 15px;
+    margin-right: 5px;
 }
 #reset-button:hover{
     background-color: #f4f4f4;
@@ -541,20 +558,16 @@ body #portal #mapFilter h2{
 #mapMusee .country-marker.unknown,
 #mapMusee .city-container .city-marker.unknown{
     color: #001B3B;
-    background-color: rgba(244,131,129,0.8);
-    border: 2px solid #BD154D;
-    width: 35px !important;
-    height: 35px !important;
+    background-color: #FBD1A5;
+    border: 2px dashed #F39F4B;
+    width: 30px !important;
+    height: 30px !important;
 }
-<<<<<<< HEAD
 #mapMusee .city-center.unknown{
     color: #001B3B;
-    background-color: rgba(244,131,129,0.8);
-    border: 2px solid #BD154D;
+    background-color: #FBD1A5;
+    border: 2px dashed #F39F4B;
 }
-=======
-
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 #mapMusee .city-container .city-marker.unknown p{
     color: #001B3B;
 }
@@ -673,7 +686,7 @@ body #portal #mapFilter h2{
 }
 
 #mapMusee .audio-player button::before {
-    content: url(/ui/plug-in/integration/carte-instrument-musee2/img/picto-play.svg);
+    content: url(/ui/plug-in/integration/carte-instrument-musee2-1/img/picto-play.svg);
     width: 15px;
     height: 15px;
     display: inline-block;
@@ -688,7 +701,7 @@ body #portal #mapFilter h2{
 }
 
 #mapMusee .audio-player button:hover::before {
-    content: url(/ui/plug-in/integration/carte-instrument-musee2/img/picto-play-outline.svg);
+    content: url(/ui/plug-in/integration/carte-instrument-musee2-1/img/picto-play-outline.svg);
 }
 
 /* Cartel */
@@ -838,6 +851,7 @@ body #portal #mapFilter h2{
     opacity: 0 ;
     transition: all 0.2s ease-in-out;
 }
+#mapMusee path.focused,
 #mapMusee path.selected{
     fill-opacity: 0.6 !important;
     opacity: 0.6 !important;
@@ -856,7 +870,7 @@ body #portal #mapFilter h2{
 }
 #mapFilter .btn-link::after,
 #mapMusee .btn-link::after{
-    content: url("/ui/plug-in/integration/carte-instrument-musee2/img/link.svg");
+    content: url("/ui/plug-in/integration/carte-instrument-musee2-1/img/link.svg");
     width: 20px;
     height: auto;
     display: inline-block;
@@ -898,7 +912,7 @@ body #portal #mapFilter h2{
 
 #mapMusee .chevron-right,
 #mapMusee .chevron-left {
-    content: url(/ui/plug-in/integration/carte-instrument-musee2/img/chevron.svg);
+    content: url(/ui/plug-in/integration/carte-instrument-musee2-1/img/chevron.svg);
     width: 10px;
     max-width: unset;
 }
@@ -913,13 +927,17 @@ body #portal #mapFilter h2{
     padding: 0.5em;
     position: absolute;
     top: 0;
-    left: 43px;
+    left: 0;
     white-space: nowrap;
 }
 
 #legend-cartel p{
     margin: 0;
     font-size: 1em;
+}
+
+#legend-cartel b{
+    font-family: 'SourceSansPro', 'Arial', 'Helvetica', sans-serif;
 }
 
 #mapElementContainer .legend{
@@ -930,6 +948,10 @@ body #portal #mapFilter h2{
 }
 #mapElementContainer .legend h4{
     width: 100%;
+}
+#mapElementContainer .legend .country-marker,
+#mapElementContainer .legend .label-legend{
+    margin: 10px 0;
 }
 #mapElementContainer .legend > div{
     display: flex;
@@ -948,8 +970,8 @@ body #portal #mapFilter h2{
 }
 
 #mapElementContainer .legend .country-marker.unknown{
-    background-color: rgba(244,131,129,0.8);
-    border: 2px solid #BD154D;
+    background-color: #FBD1A5;
+    border: 2px dashed #F39F4B;
     padding: 1px 1px 0 0;
 }
 
@@ -1005,14 +1027,11 @@ body #portal #mapFilter h2{
 .toggle {
   cursor: pointer;
   display: inline-block;
-<<<<<<< HEAD
   display: flex;
   flex-wrap: nowrap;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-=======
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 }
 
 .toggle-switch {
@@ -1024,10 +1043,7 @@ body #portal #mapFilter h2{
   position: relative;
   vertical-align: middle;
   transition: background 0.25s;
-<<<<<<< HEAD
   top: 4px;
-=======
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 }
 .toggle-switch:before, .toggle-switch:after {
   content: "";
@@ -1064,11 +1080,7 @@ body #portal #mapFilter h2{
   margin-left: 5px;
   position: relative;
   top: 2px;
-<<<<<<< HEAD
   /* font-weight: 400; */
-=======
-  font-weight: 400;
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
 }
 
 /* ////////// RESPONSIVE ////////// */
@@ -1085,8 +1097,12 @@ body #portal #mapFilter h2{
     #mapFilter.open {
         left: 0px;
     }
-<<<<<<< HEAD
 }
-=======
+@media screen and (min-width:769px){
+    .leaflet-bottom.leaflet-left{
+        right: 5px;
+    }
+    #mapElementContainer .legend{
+        margin-top: 1em !important;
+    }
 }
->>>>>>> 0911b64c170339f9c8cf929bd098089da988273e
