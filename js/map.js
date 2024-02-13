@@ -23,44 +23,55 @@ function wait_for_data(promises) {
  *                               Si `promises` n'est pas défini, un nouveau tableau est créé.
  */
 
-async function get_data() {
+function get_data(promises) {
   const controller = new AbortController();
   try {
+    if (promises == undefined) { var promises = [] }
+    
     // Liste des URL des fichiers JSON gzip
     const jsonUrls = [
-      '/ui/plug-in/integration/carte-instrument-musee2-1/data/old-sortedData.json.gz',
-      '/ui/plug-in/integration/carte-instrument-musee2-1/data/config.json.gz',
-      '/ui/plug-in/integration/carte-instrument-musee2-1/data/countries_codes_and_coordinates.json.gz',
-      '/ui/plug-in/integration/carte-instrument-musee2-1/data/output-topo.json.gz',
+      '/ui/plug-in/integration/carte-instrument-musee-v2-1/data/sortedData.json.gz',
+      '/ui/plug-in/integration/carte-instrument-musee-v2-1/data/config.json.gz',
+      '/ui/plug-in/integration/carte-instrument-musee-v2-1/data/countries_codes_and_coordinates.json.gz',
+      '/ui/plug-in/integration/carte-instrument-musee-v2-1/data/output-topo.json.gz',
     ];
 
-    const promises = jsonUrls.map(async (url) => {
-      const response = await fetch(url);
+    // Utilisez une boucle pour charger et décompresser les fichiers JSON
+    for (const url of jsonUrls) {
+      promises.push(
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Erreur HTTP : ${response.status}`);
+            }
+            return response.arrayBuffer(); // Utilisez arrayBuffer pour récupérer les données brutes
+          })
+          .then(arrayBuffer => {
+            // Décompressez le contenu avec pako
+            const inflatedData = pako.inflate(new Uint8Array(arrayBuffer), { to: 'string' });
 
-      if (!response.ok) {
-        // Uncomment the line below if you want to throw an error for non-ok responses
-        // throw new Error(`Erreur HTTP : ${response.status}`);
-      }
+            // Parsez le contenu décompressé en tant qu'objet JSON
+            return JSON.parse(inflatedData);
+          })
+      );
+    }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const inflatedData = pako.inflate(new Uint8Array(arrayBuffer), { to: 'string' });
-      return JSON.parse(inflatedData);
-    });
-
-    // Use Promise.race to cancel the fetch operation after a certain time (2 seconds in this case)
-    const data = await Promise.race([Promise.all(promises), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))]);
-
-    window["data"] = data;
+    setTimeout(() => controller.abort(), 2000);
+    Promise.all(promises, { signal: controller.signal })
+      .then(data => {
+        window["data"] = data;
+      })
+      .catch(error => {
+        console.error('Erreur lors du chargement des fichiers gzip :', error);
+      });
   } catch (err) {
     console.log(err);
-  } finally {
-    controller.abort();
   }
 }
 
 
 $(document).ready(function() {
-  console.log("new version")
+  console.log("version 2.1")
   $(".loader").show()
   wait_for_data(promises);
 });
@@ -184,6 +195,7 @@ function generalMapMusee(data, initial_data = false){
 
     // Création de la carte
     const initialView = { latlng : [20, 155], zoom : 2 }
+      window["initialView"] = initialView
       window["mapMusee"] = createMap(initialView)
       window["topo_countries_layers"] = []
       window["groups"] = []
@@ -244,6 +256,9 @@ function generalMapMusee(data, initial_data = false){
 
     // Hide loader
     $(".loader").hide();
+
+    // Clone layers on map rotation
+    placeCopyOfTopoLayer()
 }
 
 /**
@@ -312,9 +327,9 @@ const createMap = (initialView) => {
       scrollWheelZoom: true,
       minZoom :  2, // Note pour le futur: un bug dans leaflet fait qu'une valeur de minZoom non Int fait disparaitre les marqueurs uniques.
       maxZoom: 12,
-      maxBoundsViscosity: 0.8,
+      maxBoundsViscosity: 0.3,
   }).setView(initialView.latlng, initialView.zoom);
-  map.setMaxBounds([ [-65, -180], [180, 440] ])
+  map.setMaxBounds([ [-65, -360], [180, 660] ])
   L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map)
@@ -378,6 +393,8 @@ function zoomEventHandler(){
     updateCountObjects();
 
 
+
+
   });
 }
 /**
@@ -422,6 +439,7 @@ const onEachTopojson = (features, layer) => {
     let props = layer.feature.properties
     layer["has_markers"] = false
     layer["is_selected"] = false
+    layer["is_copy"] = false
     layer.layerID = props.ISO_A2_EH == -99 ? props.ISO_A3 == -99 ? normalize_string(props.NAME_EN) : props.ISO_A2 : props.ISO_A2_EH 
     layer.continent = props.CONTINENT
 
@@ -438,21 +456,27 @@ const onEachTopojson = (features, layer) => {
         layer.has_markers = true
 
         $("path").removeClass("focused")
-        $(layer._path).addClass("focused")
+        if(layer.is_copy == false){
+          $(layer._path).addClass("focused")
+        }
 
         const country_bounds = e.target.getBounds();
-
         // Adjust longitude values using enableAnteMeridian function
         Object.keys(country_bounds).forEach(key => {
-          country_bounds[key].lng = enableAnteMeridian(country_bounds[key].lng);
+          var lng = country_bounds[key].lng;
+          
+          // Utilisation du modulo pour ramener lng à une plage [-180,180]
+          lng = ((lng + 540) % 360) - 180;
+
+          // Replacer lng suivant le positionnement antemeridien
+          country_bounds[key].lng = enableAnteMeridian(lng)
         });
 
-        // Use setTimeout to log and fitBounds after 1000 milliseconds
+        // Use setTimeout to log and fitBounds after 100 milliseconds
         setTimeout(() => {
           window.mapMusee.fitBounds(country_bounds);
-        }, 100);
+        }, 50);
 
-        
         displayCountryMarkers(layer)
         updateSelectedZone()
         window["lastLayerId"] = layer.layerID
@@ -658,7 +682,8 @@ function createContinentCluster(country_code, parentGroup, countryMarkers, conti
       "count": continentNotices[country_code].count, 
       "country_code" : country_code,
       "type" : "country",
-      "isDisplayed": true
+      "isDisplayed": true,
+      "country_code": country_code
     }
 
     var countryMarker = L.marker( countryCenter, {icon: icon})
@@ -755,7 +780,8 @@ function createCountriesCluster(country_code_obj, country_code, countryGroupObje
       "city" : city,
       "type" : "city",
       "known" : true,
-      "isDisplayed": true
+      "isDisplayed": true, 
+      "country_code": country_code
 
     }
     // Création marqueur unknown
@@ -856,14 +882,14 @@ function createUnknownMarker(latlng, label, count, notices){
   var unknownMarker = L.marker( latlng, {icon: icon, bubblingMouseEvents: true, riseOnHover: true }) 
     .bindPopup(popup).openPopup();
 
-
   var markerData = {
     "notices": notices, 
     "count": count, 
     "city" : label,
     "type" : "country",
     "known" : false,
-    "isDisplayed": true
+    "isDisplayed": true,
+    "country_code": ""
 
   }
   unknownMarker["data"] = markerData
@@ -881,10 +907,6 @@ const enableAnteMeridian = input => {
   let lng = parseFloat(input)
   return lng < -20 ? lng +=360 : lng
 }
-const unableAnteMeridian = input => {
-  let lng = parseFloat(input)
-  return lng > 180 ? lng -=360 : lng
-}
 
 /**
  * Crée et ajoute des popups Leaflet pour chaque continent sur la carte.
@@ -899,14 +921,22 @@ function createContinentMarkers(sortedData) {
 
   Object.keys(sortedData.continents).map(key => {
 
-      var popup = new L.popup({closeButton: false, closeOnClick:false, autoClose:false})
-                      .setLatLng(sortedData.continents[key].latlng)
+      var alterationLatlng = [0, 360, -360]
+      alterationLatlng.map(offset => {
+        var newLatlng = [sortedData.continents[key].latlng[0], sortedData.continents[key].latlng[1] + offset]
+        var popup = new L.popup({closeButton: false, closeOnClick:false, autoClose:false})
+                      .setLatLng(newLatlng)
                       .setContent(createPopupContinent(sortedData.continents[key]))
                       .openOn(window.mapMusee)
 
-      popup["continent_name"] = key
-      window.mapMusee.addLayer(popup)
-      window.continents_popups.push(popup)
+            popup["continent_name"] = key
+            popup["initial_popup"] = offset == 0 ? true : false
+            window.mapMusee.addLayer(popup)
+            window.continents_popups.push(popup)
+      })
+      window.mapMusee.setView(window.initialView.latlng, window.initialView.zoom);
+
+
   })
 }
 
@@ -934,6 +964,7 @@ const createPopupContinent = (continent_object) => {
     e => { hoverCountryEffect(e, continent_object.liste_pays, 0) }
   )
   $(popupContent).on ("click", e => {
+    
     var continentName = $(e.target).attr("data-continent") || $(e.target).parent().attr("data-continent");
   
     window.topo_countries_layers.forEach(country_layer => {
@@ -948,7 +979,7 @@ const createPopupContinent = (continent_object) => {
     window.continents_popups.forEach(popup => {
       if (popup.continent_name !== continentName) {
         window.mapMusee.addLayer(popup);
-      } else {
+      } else if (popup.initial_popup == true){
         window.mapMusee.removeLayer(popup);
       }
     });
@@ -1082,7 +1113,7 @@ function displayCountryMarkers(selectedLayer) {
 
   // Ajouter tous les popups de continents sauf celui sélectionné
   window.continents_popups.forEach(popup => {
-    if (popup.continent_name !== continent) {
+    if (popup.continent_name !== continent || popup.initial_popup == false) {
       continentToAdd.push(popup)
     } else {
       continentToRemove.push(popup)
@@ -1214,7 +1245,7 @@ const createMarkerPopup = notices => {
 function createCityContainer(notices) {
   const cityContainer = document.createElement("div");
   cityContainer.className = `city-center ${!notices[0].Ville ? "unknown" : "known"}`;
-  cityContainer.style.transform = "translate(-78px, -9px)";
+  //cityContainer.style.transform = "translate(-78px, -25px)";
   cityContainer.title = "Voir une sélection des éléments";
 
   const nameElement = document.createElement("p");
@@ -1588,7 +1619,7 @@ function handleFilters() {
 function applyFilters(){
 
   var combinedFilter = getFiltersSettings()
-  var selectedCountry = $("path.focused").length ? $("path.focused").attr("class").split(" ")[1] : false
+  var selectedCountry = selectizeItem[0].selectize.getValue();
 
   // Cluster des continents
   window.countryMarkers.forEach(marker => {
@@ -1639,7 +1670,7 @@ function applyFilters(){
   // Cluster des pays
   window.markers.forEach(marker => {
     const { notices, known } = marker.data;
-    const country_code = notices[0]["Code ISO-2"];
+    const country_code = marker.data.country_code;
     const hasNotices = notices.some(combinedFilter);
     const countryGroup = window.groups.countriesGroup[country_code];
     const filteredNotices = notices.filter(combinedFilter);
@@ -1652,6 +1683,8 @@ function applyFilters(){
   
         if (selectedCountry && normalize_string(country_code) === normalize_string(selectedCountry) && !window.mapMusee.hasLayer(marker)) {
           window.mapMusee.addLayer(marker);
+        } else {
+          window.mapMusee.removeLayer(marker);
         }
       } else {
         window.mapMusee.removeLayer(marker);
@@ -1668,24 +1701,24 @@ function applyFilters(){
         countryGroup.removeLayer(marker);
       }
     }
+   
   });
-
-  var selectedLayer = window.countryMarkers.find(marker => normalize_string(marker.data.country_code) === normalize_string(selectedCountry));
+  
+  var selectedLayer = window.markers.find(marker => { return marker.data.country_code && selectedCountry && normalize_string(marker.data.country_code) == normalize_string(selectedCountry)})
 
   if (selectedLayer) {
+    var selectedLayer = window.countryMarkers.find(marker => normalize_string(marker.data.country_code) === normalize_string(selectedCountry));
     var continent_name = selectedLayer.data.notices[0].Continent;
     var continentObject = window.sortedData.continents[continent_name];
     
     if (continentObject) {
       var continentCountriesList = continentObject.liste_pays;
       var otherCountriesCode = continentCountriesList.filter(code => !selectedLayer.data.country_code.includes(code));
-
       window.groups.continentGroup[continent_name].getLayers().forEach(marker => {
         if (marker !== selectedLayer && !window.mapMusee.hasLayer(marker)) {
           window.mapMusee.addLayer(marker);
         }
       });
-
       otherCountriesCode.forEach(code => {
         var filteredLayer = window.groups.continentGroup[continent_name].getLayers().find(layer => layer.data.country_code === code);
 
@@ -1696,6 +1729,8 @@ function applyFilters(){
           if (hasNotices) {
             var count = filteredLayer.data.notices.filter(combinedFilter).length;
             updateMarkerContent(filteredLayer, count, false, "continent-marker");
+          } else {
+            window.mapMusee.removeLayer(filteredLayer);
           }
         } else {
           var countryMarker = window.countryMarkers.find(marker => normalize_string(marker.data.country_code) === normalize_string(code));
@@ -1878,6 +1913,36 @@ function updateCountObjects(){
 
   var totalCount = 0;
   if(selectedCountry && selectedCountry != "empty"){
+    // count continent
+    if(selectedCountry.startsWith("0")){
+      window.continents_popups.forEach(popup => {
+        if(popup.initial_popup && normalize_string(popup.continent_name) == normalize_string(selectedCountry.replace("0", ""))){
+          totalCount += continentsCount[popup.continent_name];
+        }
+        popup._content.innerHTML = popup._content.innerHTML.replace(/<p>\d{1,5}/, "<p>" + continentsCount[popup.continent_name]);
+      });
+    } else {
+      // Count countries
+      var typesElements = document.querySelectorAll('input[name="types"]')
+      Array.from(typesElements).map(typeElement => {
+        if (typeElement.value == "all") { return }
+
+        var countLabel = $(typeElement).parent().parent().children().last()
+        totalCount += parseInt(countLabel.text())
+      })
+    }
+  } else {
+    // count all continents
+    window.continents_popups.forEach(popup => {
+      if(popup.initial_popup){ 
+        totalCount += continentsCount[popup.continent_name] 
+      }
+      popup._content.innerHTML = popup._content.innerHTML.replace(/<p>\d{1,5}/, "<p>" + continentsCount[popup.continent_name]);
+    });
+  }
+
+/* 
+  if(selectedCountry && selectedCountry != "empty" && !selectedCountry.startsWith("0")){
     var typesElements = document.querySelectorAll('input[name="types"]')
     Array.from(typesElements).map(typeElement => {
       if (typeElement.value == "all") { return }
@@ -1885,12 +1950,22 @@ function updateCountObjects(){
       var countLabel = $(typeElement).parent().parent().children().last()
       totalCount += parseInt(countLabel.text())
     })
-  }else{
+
+    console.log(window.continents_popups)
     window.continents_popups.forEach(popup => {
-      totalCount += continentsCount[popup.continent_name];
+      if( (popup.initial_popup && selectedCountry == "empty") ||
+          (popup.initial_popup && normalize_string(popup.continent_name) == normalize_string(selectedCountry.replace("0", ""))) 
+        ){
+        console.log(popup)
+        totalCount += continentsCount[popup.continent_name];
+      }
       popup._content.innerHTML = popup._content.innerHTML.replace(/<p>\d{1,5}/, "<p>" + continentsCount[popup.continent_name]);
     });
-  }
+
+  } */
+
+
+  
   document.getElementById("nb-items").textContent = totalCount + " Objet(s)";
 
 }
@@ -2193,77 +2268,6 @@ const searchBox = () => {
   $('#search').on("click", function(e) { filterSearch() })
 }
 
-/**
- * Applique les filtres de recherche sur les données et met à jour la carte en conséquence.
- * Gère la recherche par mots-clés, les filtres de type et d'enregistrement.
- */
-/* 
-const filterSearch = () => {  
-  // Reset location
-  selectizeItem[0].selectize.setValue("empty")
-  var filtersSettings = getFiltersSettings()
-
-  const data = window.initial_data[0].raw_data
-  var searchTerms = document.getElementById("seeker").value.replace(/\s$/gmi, "")
-  // Reset search for button reset
-  if (searchTerms == "resetMap"){
-      filteredSortedData = sortedData
-      document.getElementById("all-types").checked = true
-      document.getElementById("with-records").checked = false
-      document.getElementById("seeker").value = ""
-      searchTerms = ""
-  }
-
-  // Traitement de la recherche avec prise en charge de la recherche exacte ("lorem")
-  let queryReg = []
-  var regexQuote = new RegExp(/\"(.*?)\"/, 'gm')
-
-  if (regexQuote.test(searchTerms)) {
-      queryReg = searchTerms.match(regexQuote).map(q => q.replace(/\"/gm, ''))
-
-  } else {
-      searchTerms.toLowerCase().split(' ').map(q => queryReg.push(`(?=.*${q})`))
-  }
-
-  var filtered = []
-
-  const filterIt = (arr, query) => {
-      return arr.filter(obj => Object.keys(obj).some(key => {
-        if (key !== 'Enregistrement') {   
-            return new RegExp(query, "mgi").test(obj[key]);
-        }
-        return false;
-      }))
-  }
-  queryReg.map(query => { 
-      filtered.push(filterIt(data, query)) 
-  })
-  // Prise en charge de la recherche avec mots multiples dans tous les champs de data
-  if (queryReg.length > 1) {
-      const findDuplicates = arr => arr.filter((item, index) => arr.indexOf(item) !== index)
-      filtered = findDuplicates(filtered.flat()).filter(notice => filtersSettings(notice))
-  } 
-
-  var filterQuery = { "filtered": filtered.flat(), "query": queryReg }
-  if (window.mapMusee == undefined) { return }
-
-  destructMap()
-
-  var dataObjectFiltered = createDataObject(filterQuery.filtered, window.object_type_data.continents_infos, window.data_countries)
-  var newData = [ 
-    dataObjectFiltered,
-    window.object_type_data,
-    window.data_countries,
-    window.output_topo_data
-  ]
-  
-  console.log("call generall in filterit")
-  generalMapMusee(newData, window.initial_data)
-
-  // Ouvrir et fermer le menu des filtres
-  openCloseFilters()
-
-} */
 const filterSearch = () => {
   // Reset location
   selectizeItem[0].selectize.setValue("empty");
@@ -2479,3 +2483,44 @@ function openCloseFilters(){
     };
   })
 }
+
+
+// Fonction pour créer une copie de la couche TopoJSON
+function createCopyOfLayer(layer, offset) {
+  // Créez une copie de la couche GeoJSON
+  const copyLayer = L.geoJson(layer.toGeoJSON(), {
+    onEachFeature: onEachTopojson,
+    style: style,
+  });
+
+  // Fonction récursive pour traiter les coordonnées imbriquées
+  function processCoordinates(coordinates) {
+    return coordinates.map(coord => (Array.isArray(coord) ? processCoordinates(coord) : L.latLng(coord.lat, coord.lng + offset)));
+  }
+
+  // Appliquer la fonction récursive aux coordonnées de chaque sous-couche
+  copyLayer.eachLayer(sublayer => {
+    if (sublayer.getLatLngs && sublayer.feature.geometry) {
+      const newLatLngs = processCoordinates(sublayer.getLatLngs());
+
+      if (newLatLngs && newLatLngs.length > 0 && newLatLngs[0].length > 0 && newLatLngs[0][0]) {
+        sublayer["is_copy"] = true
+        sublayer.setLatLngs(newLatLngs);
+      }
+    }
+  });
+  return copyLayer;
+}
+
+// Fonction pour placer les copies des couches
+function placeCopyOfTopoLayer() {
+  // Parcourez chaque couche TopoJSON des pays
+  window.topo_countries_layers.forEach(layer => {
+    var layersToAdd = [
+      createCopyOfLayer(layer, 360),
+      createCopyOfLayer(layer, -360),
+    ];
+    toggleLayers("add", layersToAdd);
+  });
+}
+

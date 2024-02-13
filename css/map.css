@@ -231,7 +231,7 @@ body #portal #mapFilter h2{
 }
 /* Loader */
 .loader {
-    background: url(/ui/plug-in/integration/carte-instrument-musee/img/loader.gif), #fff;
+    background: url(/ui/plug-in/integration/carte-instrument-musee-v2-1/img/loader.gif), #fff;
     background-repeat: no-repeat;
     background-position: 50%, 50%;
     width:100%;
@@ -460,6 +460,13 @@ body #portal #mapFilter h2{
     box-shadow: 0px 5px 10px -3px rgba(0,0,0,0.2);
     cursor: pointer;
 
+}
+#mapMusee .city-center.unknown{
+    transform: translate(-78px, -15px);
+}
+
+#mapMusee .city-center.known{
+    transform: translate(-38px, -9px);
 }
 #mapMusee .continent-popup{
     padding: 1em;
@@ -846,6 +853,13 @@ body #portal #mapFilter h2{
     content: " | ";
     margin-left: 3px;
 }
+/* FOR TESTING */
+/* #mapMusee path{
+    fill-opacity: 0.5 !important ;
+    opacity: 0.5 !important ;
+    transition: all 0.2s ease-in-out;
+} */
+
 #mapMusee path:not(.reset-icon){
     fill-opacity: 0 ;
     opacity: 0 ;
