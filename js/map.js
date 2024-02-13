@@ -1940,32 +1940,7 @@ function updateCountObjects(){
       popup._content.innerHTML = popup._content.innerHTML.replace(/<p>\d{1,5}/, "<p>" + continentsCount[popup.continent_name]);
     });
   }
-
-/* 
-  if(selectedCountry && selectedCountry != "empty" && !selectedCountry.startsWith("0")){
-    var typesElements = document.querySelectorAll('input[name="types"]')
-    Array.from(typesElements).map(typeElement => {
-      if (typeElement.value == "all") { return }
-
-      var countLabel = $(typeElement).parent().parent().children().last()
-      totalCount += parseInt(countLabel.text())
-    })
-
-    console.log(window.continents_popups)
-    window.continents_popups.forEach(popup => {
-      if( (popup.initial_popup && selectedCountry == "empty") ||
-          (popup.initial_popup && normalize_string(popup.continent_name) == normalize_string(selectedCountry.replace("0", ""))) 
-        ){
-        console.log(popup)
-        totalCount += continentsCount[popup.continent_name];
-      }
-      popup._content.innerHTML = popup._content.innerHTML.replace(/<p>\d{1,5}/, "<p>" + continentsCount[popup.continent_name]);
-    });
-
-  } */
-
-
-  
+ 
   document.getElementById("nb-items").textContent = totalCount + " Objet(s)";
 
 }
@@ -2484,7 +2459,11 @@ function openCloseFilters(){
   })
 }
 
-
+/**
+ * Fonction de création d'une copie de la couche TopoJson
+ * @param {Object}layer - couche topojson
+ * @param {Number}offset - valeur de décalage
+ */
 // Fonction pour créer une copie de la couche TopoJSON
 function createCopyOfLayer(layer, offset) {
   // Créez une copie de la couche GeoJSON
